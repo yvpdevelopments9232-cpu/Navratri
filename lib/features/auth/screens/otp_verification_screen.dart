@@ -96,12 +96,25 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
       }
     } catch (e) {
       if (mounted) {
-        String msg = AppStrings.tr(
-          'अवैध किंवा कालबाह्य OTP कोड! कृपया पुन्हा प्रयत्न करा. (Invalid or expired OTP)',
-          'Invalid or expired OTP code! Please try again.',
-        );
-        if (e.toString().toLowerCase().contains('password')) {
+        String msg;
+        final lower = e.toString().toLowerCase();
+        if (lower.contains('socketexception') ||
+            lower.contains('failed host lookup') ||
+            lower.contains('clientexception') ||
+            lower.contains('no address associated') ||
+            lower.contains('network') ||
+            lower.contains('timeout')) {
+          msg = AppStrings.tr(
+            'इंटरनेट कनेक्शन उपलब्ध नाही. कृपया आपले नेटवर्क तपासा.',
+            'No internet connection. Please check your network.',
+          );
+        } else if (lower.contains('password')) {
           msg = '${AppStrings.tr("पासवर्ड त्रुटी", "Password error")}: ${e.toString()}';
+        } else {
+          msg = AppStrings.tr(
+            'अवैध किंवा कालबाह्य OTP कोड! कृपया पुन्हा प्रयत्न करा. (Invalid or expired OTP)',
+            'Invalid or expired OTP code! Please try again.',
+          );
         }
 
         ScaffoldMessenger.of(context).showSnackBar(

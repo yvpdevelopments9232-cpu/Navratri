@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../config/supabase_config.dart';
+import '../core/localization/app_strings.dart';
 import '../models/all_models.dart';
 import '../repositories/mandal_repository.dart';
 
@@ -346,7 +347,7 @@ class AuthProvider extends ChangeNotifier {
       debugPrint('Supabase Auth error: $e');
       _isLoading = false;
       notifyListeners();
-      return e.toString().replaceAll('AuthException: ', '').replaceAll('Exception: ', '');
+      return _formatAuthError(e);
     }
   }
 
@@ -450,7 +451,7 @@ class AuthProvider extends ChangeNotifier {
       debugPrint('Supabase SignUp error: $e');
       _isLoading = false;
       notifyListeners();
-      return e.toString().replaceAll('AuthException: ', '').replaceAll('Exception: ', '');
+      return _formatAuthError(e);
     }
   }
 
@@ -494,5 +495,32 @@ class AuthProvider extends ChangeNotifier {
     _availableUsers = [];
     _activeRole = AppRole.admin;
     notifyListeners();
+  }
+
+  String _formatAuthError(Object e) {
+    final str = e.toString();
+    final lower = str.toLowerCase();
+    if (lower.contains('socketexception') ||
+        lower.contains('failed host lookup') ||
+        lower.contains('clientexception') ||
+        lower.contains('no address associated') ||
+        lower.contains('network') ||
+        lower.contains('connection refused') ||
+        lower.contains('timeout')) {
+      return AppStrings.tr(
+        'इंटरनेट कनेक्शन उपलब्ध नाही. कृपया आपले नेटवर्क तपासा. (No internet connection. Please check your network)',
+        'No internet connection. Please check your network connection.',
+      );
+    }
+    if (lower.contains('invalid login credentials') || lower.contains('invalid_credentials')) {
+      return AppStrings.tr(
+        'ईमेल किंवा पासवर्ड चुकीचा आहे. (Invalid email or password)',
+        'Invalid email or password.',
+      );
+    }
+    return str
+        .replaceAll('AuthRetryableFetchException: ', '')
+        .replaceAll('AuthException: ', '')
+        .replaceAll('Exception: ', '');
   }
 }

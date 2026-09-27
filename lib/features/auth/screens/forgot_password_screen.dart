@@ -91,9 +91,27 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       }
     } catch (e) {
       if (mounted) {
+        String msg = e.toString();
+        final lower = msg.toLowerCase();
+        if (lower.contains('socketexception') ||
+            lower.contains('failed host lookup') ||
+            lower.contains('clientexception') ||
+            lower.contains('no address associated') ||
+            lower.contains('network') ||
+            lower.contains('timeout')) {
+          msg = AppStrings.tr(
+            'इंटरनेट कनेक्शन उपलब्ध नाही. कृपया आपले नेटवर्क तपासा.',
+            'No internet connection. Please check your network.',
+          );
+        } else {
+          msg = msg
+              .replaceAll('AuthRetryableFetchException: ', '')
+              .replaceAll('AuthException: ', '')
+              .replaceAll('Exception: ', '');
+        }
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('${AppStrings.tr("त्रुटी", "Error")}: ${e.toString()}'),
+            content: Text('${AppStrings.tr("त्रुटी", "Error")}: $msg'),
             backgroundColor: Colors.red.shade600,
           ),
         );
