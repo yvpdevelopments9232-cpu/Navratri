@@ -192,89 +192,152 @@ class _SettingsScreenState extends State<SettingsScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Row(
-                  children: [
-                    const Icon(Icons.settings, color: AppColors.primaryMaroon),
-                    const SizedBox(width: 8),
-                    Text(
-                      AppStrings.tr('मंडळ ERP सेटिंग्ज व संरचना', 'Mandal ERP Settings & Configuration'),
-                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
-                    ),
-                  ],
-                ),
-                ElevatedButton.icon(
-                  onPressed: _isSaving ? null : _saveSettings,
-                  icon: _isSaving
-                      ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                      : const Icon(Icons.check, size: 16),
-                  label: Text(_isSaving ? AppStrings.tr('जतन होत आहे...', 'Saving...') : AppStrings.saveSettings),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primaryMaroon,
-                    foregroundColor: Colors.white,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 20),
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final isCompact = constraints.maxWidth < 700;
 
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Settings Left Menu
-                Container(
-                  width: 220,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF8FAFC),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: AppColors.borderLight),
-                  ),
-                  child: ListView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: subTabs.length,
-                    itemBuilder: (ctx, idx) {
-                      final isSelected = selectedSubTab == idx;
-                      return ListTile(
-                        dense: true,
-                        title: Text(
-                          subTabs[idx],
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                            color: isSelected ? AppColors.primaryMaroon : AppColors.textPrimary,
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Wrap(
+                      alignment: WrapAlignment.spaceBetween,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      spacing: 12,
+                      runSpacing: 10,
+                      children: [
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.settings, color: AppColors.primaryMaroon),
+                            const SizedBox(width: 8),
+                            Text(
+                              AppStrings.tr('मंडळ ERP सेटिंग्ज व संरचना', 'Mandal ERP Settings & Configuration'),
+                              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                            ),
+                          ],
+                        ),
+                        ElevatedButton.icon(
+                          onPressed: _isSaving ? null : _saveSettings,
+                          icon: _isSaving
+                              ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                              : const Icon(Icons.check, size: 16),
+                          label: Text(_isSaving ? AppStrings.tr('जतन होत आहे...', 'Saving...') : AppStrings.saveSettings),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.primaryMaroon,
+                            foregroundColor: Colors.white,
                           ),
                         ),
-                        tileColor: isSelected ? Colors.white : Colors.transparent,
-                        shape: RoundedRectangleBorder(
-                          side: isSelected ? const BorderSide(color: AppColors.primaryMaroon, width: 2) : BorderSide.none,
-                        ),
-                        onTap: () => setState(() => selectedSubTab = idx),
-                      );
-                    },
-                  ),
-                ),
-                const SizedBox(width: 24),
-
-                // Settings Form Content
-                Expanded(
-                  child: Container(
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF8FAFC),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: AppColors.borderLight),
+                      ],
                     ),
-                    child: selectedSubTab == 5
-                        ? const BackupRestoreScreen()
-                        : selectedSubTab == 6
-                            ? _buildLanguageTab()
-                            : _buildMandalProfileTab(),
-                  ),
-                ),
-              ],
+                    const SizedBox(height: 20),
+
+                    if (isCompact) ...[
+                      // Mobile: Horizontal Scrollable Tab Bar
+                      SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        physics: const BouncingScrollPhysics(),
+                        child: Row(
+                          children: List.generate(subTabs.length, (idx) {
+                            final isSelected = selectedSubTab == idx;
+                            return Padding(
+                              padding: const EdgeInsets.only(right: 8.0),
+                              child: ChoiceChip(
+                                label: Text(
+                                  subTabs[idx],
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                                    color: isSelected ? Colors.white : AppColors.textPrimary,
+                                  ),
+                                ),
+                                selected: isSelected,
+                                selectedColor: AppColors.primaryMaroon,
+                                backgroundColor: const Color(0xFFF1F5F9),
+                                onSelected: (_) => setState(() => selectedSubTab = idx),
+                              ),
+                            );
+                          }),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Settings Form Content (Full Width)
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF8FAFC),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: AppColors.borderLight),
+                        ),
+                        child: selectedSubTab == 5
+                            ? const BackupRestoreScreen()
+                            : selectedSubTab == 6
+                                ? _buildLanguageTab()
+                                : _buildMandalProfileTab(),
+                      ),
+                    ] else ...[
+                      // Desktop: Side-by-side split layout
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Settings Left Menu
+                          Container(
+                            width: 220,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF8FAFC),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: AppColors.borderLight),
+                            ),
+                            child: ListView.builder(
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
+                              itemCount: subTabs.length,
+                              itemBuilder: (ctx, idx) {
+                                final isSelected = selectedSubTab == idx;
+                                return ListTile(
+                                  dense: true,
+                                  title: Text(
+                                    subTabs[idx],
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                                      color: isSelected ? AppColors.primaryMaroon : AppColors.textPrimary,
+                                    ),
+                                  ),
+                                  tileColor: isSelected ? Colors.white : Colors.transparent,
+                                  shape: RoundedRectangleBorder(
+                                    side: isSelected ? const BorderSide(color: AppColors.primaryMaroon, width: 2) : BorderSide.none,
+                                  ),
+                                  onTap: () => setState(() => selectedSubTab = idx),
+                                );
+                              },
+                            ),
+                          ),
+                          const SizedBox(width: 24),
+
+                          // Settings Form Content
+                          Expanded(
+                            child: Container(
+                              padding: const EdgeInsets.all(20),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFF8FAFC),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: AppColors.borderLight),
+                              ),
+                              child: selectedSubTab == 5
+                                  ? const BackupRestoreScreen()
+                                  : selectedSubTab == 6
+                                      ? _buildLanguageTab()
+                                      : _buildMandalProfileTab(),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ],
+                );
+              },
             ),
           ],
         ),

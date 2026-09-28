@@ -34,6 +34,7 @@ import 'services/offline_db_helper.dart';
 import 'services/sync_service.dart';
 import 'widgets/app_header.dart';
 import 'widgets/app_sidebar.dart';
+import 'widgets/desktop_wrapper.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -218,7 +219,11 @@ class _MainAppControllerState extends State<MainAppController> {
           ),
         ),
         body: SafeArea(
-          child: _buildCurrentScreen(),
+          child: DesktopWrapper(
+            key: ValueKey(selectedModuleIndex),
+            minWidth: 1050,
+            child: _buildCurrentScreen(),
+          ),
         ),
       );
     }
