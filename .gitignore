@@ -53,6 +53,7 @@ NavratriDatabase/
 *.db
 *.db-shm
 *.db-wal
+*.zip
 *Resume*
 generate_resume*.py
 resume_page_*.png

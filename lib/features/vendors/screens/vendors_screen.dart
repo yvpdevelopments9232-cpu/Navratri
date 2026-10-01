@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../core/localization/app_strings.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/currency_formatter.dart';
 import '../../../models/all_models.dart';
@@ -25,30 +26,38 @@ class _VendorsScreenState extends State<VendorsScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Row(
+        title: Row(
           children: [
-            Icon(Icons.storefront, color: AppColors.primaryMaroon),
-            SizedBox(width: 8),
-            Text('Add Vendor', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+            const Icon(Icons.storefront, color: AppColors.primaryMaroon),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                AppStrings.tr('व्यापारी / कंत्राटदार जोडा', 'Add Vendor'),
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 17),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
           ],
         ),
-        content: SizedBox(
-          width: 450,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: 'Vendor Name *')),
-              const SizedBox(height: 12),
-              TextField(controller: serviceCtrl, decoration: const InputDecoration(labelText: 'Service Type (e.g. Sound, Lighting) *')),
-              const SizedBox(height: 12),
-              TextField(controller: contactCtrl, decoration: const InputDecoration(labelText: 'Contact Mobile *'), keyboardType: TextInputType.phone),
-              const SizedBox(height: 12),
-              TextField(controller: amountCtrl, decoration: const InputDecoration(labelText: 'Contract Amount (₹) *'), keyboardType: TextInputType.number),
-            ],
+        content: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 450),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(controller: nameCtrl, decoration: InputDecoration(labelText: AppStrings.tr('व्यापारी / फर्मचे नाव *', 'Vendor Name *'))),
+                const SizedBox(height: 12),
+                TextField(controller: serviceCtrl, decoration: InputDecoration(labelText: AppStrings.tr('सेवा प्रकार (उदा. मंडप, ध्वनी, रोषणाई) *', 'Service Type (e.g. Sound, Lighting) *'))),
+                const SizedBox(height: 12),
+                TextField(controller: contactCtrl, decoration: InputDecoration(labelText: AppStrings.tr('मोबाईल क्रमांक *', 'Contact Mobile *')), keyboardType: TextInputType.phone),
+                const SizedBox(height: 12),
+                TextField(controller: amountCtrl, decoration: InputDecoration(labelText: AppStrings.tr('करार रक्कम (₹) *', 'Contract Amount (₹) *')), keyboardType: TextInputType.number),
+              ],
+            ),
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(AppStrings.tr('रद्द करा', 'Cancel'))),
           ElevatedButton(
             onPressed: () {
               final amt = double.tryParse(amountCtrl.text.trim()) ?? 0.0;
@@ -69,7 +78,7 @@ class _VendorsScreenState extends State<VendorsScreen> {
               Navigator.pop(ctx);
               setState(() {});
             },
-            child: const Text('Save Vendor'),
+            child: Text(AppStrings.tr('जतन करा', 'Save Vendor')),
           ),
         ],
       ),
@@ -78,15 +87,19 @@ class _VendorsScreenState extends State<VendorsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isMobile = screenWidth < 700;
+
     final filtered = repository.vendors.where((v) {
       final q = _searchQuery.toLowerCase();
       return v.vendorName.toLowerCase().contains(q) || v.serviceType.toLowerCase().contains(q) || v.contact.contains(q);
     }).toList();
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsets.all(isMobile ? 12 : 20),
       child: Container(
-        padding: const EdgeInsets.all(20),
+        width: double.infinity,
+        padding: EdgeInsets.all(isMobile ? 12 : 20),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(12),
@@ -95,73 +108,146 @@ class _VendorsScreenState extends State<VendorsScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                const Icon(Icons.storefront, color: AppColors.primaryMaroon),
-                const SizedBox(width: 8),
-                const Text(
-                  'Vendor Management & Contracts',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
-                ),
-                const Spacer(),
-                SizedBox(
-                  width: 250,
-                  height: 40,
-                  child: TextField(
-                    onChanged: (val) => setState(() => _searchQuery = val),
-                    decoration: InputDecoration(
-                      hintText: 'Search vendor...',
-                      prefixIcon: const Icon(Icons.search, size: 18),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                      filled: true,
-                      fillColor: const Color(0xFFF8FAFC),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: const BorderSide(color: AppColors.borderLight),
+            if (isMobile)
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(Icons.storefront, color: AppColors.primaryMaroon, size: 22),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          AppStrings.tr('व्यापारी व कंत्राट व्यवस्थापन', 'Vendor Management'),
+                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: SizedBox(
+                          height: 40,
+                          child: TextField(
+                            onChanged: (val) => setState(() => _searchQuery = val),
+                            decoration: InputDecoration(
+                              hintText: AppStrings.tr('शोधा...', 'Search vendor...'),
+                              prefixIcon: const Icon(Icons.search, size: 18),
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                              filled: true,
+                              fillColor: const Color(0xFFF8FAFC),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                                borderSide: const BorderSide(color: AppColors.borderLight),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      ElevatedButton.icon(
+                        onPressed: _showAddVendorDialog,
+                        icon: const Icon(Icons.add, size: 16),
+                        label: Text(AppStrings.tr('+ जोडा', '+ Add')),
+                      ),
+                    ],
+                  ),
+                ],
+              )
+            else
+              Row(
+                children: [
+                  const Icon(Icons.storefront, color: AppColors.primaryMaroon),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      AppStrings.tr('व्यापारी व कंत्राट व्यवस्थापन (Vendors & Contracts)', 'Vendor Management & Contracts'),
+                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  SizedBox(
+                    width: 220,
+                    height: 40,
+                    child: TextField(
+                      onChanged: (val) => setState(() => _searchQuery = val),
+                      decoration: InputDecoration(
+                        hintText: AppStrings.tr('व्यापारी शोधा...', 'Search vendor...'),
+                        prefixIcon: const Icon(Icons.search, size: 18),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                        filled: true,
+                        fillColor: const Color(0xFFF8FAFC),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: const BorderSide(color: AppColors.borderLight),
+                        ),
                       ),
                     ),
                   ),
-                ),
-                const SizedBox(width: 12),
-                ElevatedButton.icon(
-                  onPressed: _showAddVendorDialog,
-                  icon: const Icon(Icons.add, size: 16),
-                  label: const Text('+ Add Vendor'),
-                ),
-              ],
-            ),
+                  const SizedBox(width: 12),
+                  ElevatedButton.icon(
+                    onPressed: _showAddVendorDialog,
+                    icon: const Icon(Icons.add, size: 16),
+                    label: Text(AppStrings.tr('+ व्यापारी जोडा', '+ Add Vendor')),
+                  ),
+                ],
+              ),
             const SizedBox(height: 18),
 
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: DataTable(
-                headingRowColor: WidgetStateProperty.all(const Color(0xFFF8FAFC)),
-                columns: const [
-                  DataColumn(label: Text('Vendor Name', style: TextStyle(fontWeight: FontWeight.bold))),
-                  DataColumn(label: Text('Service Type', style: TextStyle(fontWeight: FontWeight.bold))),
-                  DataColumn(label: Text('Contact', style: TextStyle(fontWeight: FontWeight.bold))),
-                  DataColumn(label: Text('Amount', style: TextStyle(fontWeight: FontWeight.bold))),
-                  DataColumn(label: Text('Paid', style: TextStyle(fontWeight: FontWeight.bold))),
-                  DataColumn(label: Text('Remaining', style: TextStyle(fontWeight: FontWeight.bold))),
-                  DataColumn(label: Text('Status', style: TextStyle(fontWeight: FontWeight.bold))),
-                  DataColumn(label: Text('Action', style: TextStyle(fontWeight: FontWeight.bold))),
-                ],
-                rows: filtered.map((v) {
-                  return DataRow(
-                    cells: [
-                      DataCell(Text(v.vendorName, style: const TextStyle(fontWeight: FontWeight.bold))),
-                      DataCell(Text(v.serviceType)),
-                      DataCell(Text(v.contact)),
-                      DataCell(Text(CurrencyFormatter.format(v.contractAmount), style: const TextStyle(fontWeight: FontWeight.w600))),
-                      DataCell(Text(CurrencyFormatter.format(v.paidAmount), style: const TextStyle(color: AppColors.successGreen))),
-                      DataCell(Text(CurrencyFormatter.format(v.remainingAmount), style: const TextStyle(color: AppColors.expenseRed))),
-                      DataCell(StatusBadge(status: v.status)),
-                      DataCell(
+            if (filtered.isEmpty)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 36),
+                child: Center(
+                  child: Text(
+                    AppStrings.tr('कोणताही व्यापारी उपलब्ध नाही', 'No vendors found'),
+                    style: const TextStyle(color: AppColors.textSecondary),
+                  ),
+                ),
+              )
+            else if (isMobile)
+              ListView.separated(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: filtered.length,
+                separatorBuilder: (_, _) => const SizedBox(height: 10),
+                itemBuilder: (ctx, idx) {
+                  final v = filtered[idx];
+                  return Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF8FAFC),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: AppColors.borderLight),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
                         Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            IconButton(icon: const Icon(Icons.edit, size: 18, color: AppColors.infoBlue), onPressed: () {}),
+                            Expanded(
+                              child: Text(
+                                v.vendorName,
+                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppColors.textPrimary),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            StatusBadge(status: v.status),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text('${v.serviceType} | 📞 ${v.contact}', style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
                             IconButton(
                               icon: const Icon(Icons.delete, size: 18, color: AppColors.expenseRed),
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(),
                               onPressed: () {
                                 repository.vendors.removeWhere((i) => i.id == v.id);
                                 setState(() {});
@@ -169,12 +255,67 @@ class _VendorsScreenState extends State<VendorsScreen> {
                             ),
                           ],
                         ),
-                      ),
-                    ],
+                        const Divider(height: 12),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text('${AppStrings.tr('करार', 'Contract')}: ${CurrencyFormatter.format(v.contractAmount)}',
+                                style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600)),
+                            Text('${AppStrings.tr('अदा', 'Paid')}: ${CurrencyFormatter.format(v.paidAmount)}',
+                                style: const TextStyle(fontSize: 11, color: AppColors.successGreen, fontWeight: FontWeight.bold)),
+                            Text('${AppStrings.tr('शिल्लक', 'Rem')}: ${CurrencyFormatter.format(v.remainingAmount)}',
+                                style: const TextStyle(fontSize: 11, color: AppColors.expenseRed, fontWeight: FontWeight.bold)),
+                          ],
+                        ),
+                      ],
+                    ),
                   );
-                }).toList(),
+                },
+              )
+            else
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: DataTable(
+                  headingRowColor: WidgetStateProperty.all(const Color(0xFFF8FAFC)),
+                  columns: [
+                    DataColumn(label: Text(AppStrings.tr('व्यापारी नाव', 'Vendor Name'), style: const TextStyle(fontWeight: FontWeight.bold))),
+                    DataColumn(label: Text(AppStrings.tr('सेवा प्रकार', 'Service Type'), style: const TextStyle(fontWeight: FontWeight.bold))),
+                    DataColumn(label: Text(AppStrings.tr('संपर्क', 'Contact'), style: const TextStyle(fontWeight: FontWeight.bold))),
+                    DataColumn(label: Text(AppStrings.tr('करार रक्कम', 'Amount'), style: const TextStyle(fontWeight: FontWeight.bold))),
+                    DataColumn(label: Text(AppStrings.tr('अदा रक्कम', 'Paid'), style: const TextStyle(fontWeight: FontWeight.bold))),
+                    DataColumn(label: Text(AppStrings.tr('शिल्लक रक्कम', 'Remaining'), style: const TextStyle(fontWeight: FontWeight.bold))),
+                    DataColumn(label: Text(AppStrings.tr('स्थिती', 'Status'), style: const TextStyle(fontWeight: FontWeight.bold))),
+                    DataColumn(label: Text(AppStrings.tr('क्रिया', 'Action'), style: const TextStyle(fontWeight: FontWeight.bold))),
+                  ],
+                  rows: filtered.map((v) {
+                    return DataRow(
+                      cells: [
+                        DataCell(Text(v.vendorName, style: const TextStyle(fontWeight: FontWeight.bold))),
+                        DataCell(Text(v.serviceType)),
+                        DataCell(Text(v.contact)),
+                        DataCell(Text(CurrencyFormatter.format(v.contractAmount), style: const TextStyle(fontWeight: FontWeight.w600))),
+                        DataCell(Text(CurrencyFormatter.format(v.paidAmount), style: const TextStyle(color: AppColors.successGreen))),
+                        DataCell(Text(CurrencyFormatter.format(v.remainingAmount), style: const TextStyle(color: AppColors.expenseRed))),
+                        DataCell(StatusBadge(status: v.status)),
+                        DataCell(
+                          Row(
+                            children: [
+                              IconButton(icon: const Icon(Icons.edit, size: 18, color: AppColors.infoBlue), onPressed: () {}),
+                              IconButton(
+                                icon: const Icon(Icons.delete, size: 18, color: AppColors.expenseRed),
+                                onPressed: () {
+                                  repository.vendors.removeWhere((i) => i.id == v.id);
+                                  setState(() {});
+                                },
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    );
+                  }).toList(),
+                ),
               ),
-            ),
           ],
         ),
       ),

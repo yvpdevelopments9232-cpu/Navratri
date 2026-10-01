@@ -27,19 +27,24 @@ class AppHeader extends StatelessWidget implements PreferredSizeWidget {
     final isDesktop = screenWidth >= 900;
     final displayModeProvider = context.watch<DisplayModeProvider>();
 
-    return Material(
-      color: AppColors.primaryMaroon,
-      elevation: 4,
-      child: SafeArea(
-        bottom: false,
-        child: Container(
-          height: 60,
-          padding: const EdgeInsets.symmetric(horizontal: 10),
-          child: isDesktop
-              ? _buildDesktopHeader(context, displayModeProvider)
-              : _buildMobileHeader(context, displayModeProvider),
-        ),
-      ),
+    return ValueListenableBuilder<bool>(
+      valueListenable: AppStrings.languageNotifier,
+      builder: (context, isMarathi, _) {
+        return Material(
+          color: AppColors.primaryMaroon,
+          elevation: 4,
+          child: SafeArea(
+            bottom: false,
+            child: Container(
+              height: 60,
+              padding: const EdgeInsets.symmetric(horizontal: 10),
+              child: isDesktop
+                  ? _buildDesktopHeader(context, displayModeProvider)
+                  : _buildMobileHeader(context, displayModeProvider),
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -258,32 +263,37 @@ class AppHeader extends StatelessWidget implements PreferredSizeWidget {
   }
 
   Widget _buildLanguagePill({bool compact = false}) {
-    return InkWell(
-      onTap: () => AppStrings.toggleLanguage(),
-      borderRadius: BorderRadius.circular(14),
-      child: Container(
-        padding: EdgeInsets.symmetric(horizontal: compact ? 6 : 8, vertical: 4),
-        decoration: BoxDecoration(
-          color: Colors.white.withAlpha(25),
+    return ValueListenableBuilder<bool>(
+      valueListenable: AppStrings.languageNotifier,
+      builder: (context, isMarathi, _) {
+        return InkWell(
+          onTap: () => AppStrings.toggleLanguage(),
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: AppColors.accentGold.withAlpha(120)),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.language, color: AppColors.accentGold, size: 13),
-            const SizedBox(width: 3),
-            Text(
-              AppStrings.isMarathi ? 'मराठी' : 'EN',
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: 11,
-              ),
+          child: Container(
+            padding: EdgeInsets.symmetric(horizontal: compact ? 6 : 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: Colors.white.withAlpha(25),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: AppColors.accentGold.withAlpha(120)),
             ),
-          ],
-        ),
-      ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.language, color: AppColors.accentGold, size: 13),
+                const SizedBox(width: 3),
+                Text(
+                  isMarathi ? 'मराठी' : 'EN',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 11,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 

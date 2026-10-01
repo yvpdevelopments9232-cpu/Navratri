@@ -379,32 +379,42 @@ class MandalRepository {
       debugPrint('Local SQLite mutation error for $table: $e');
     }
 
-    // 2. Attempt push to Supabase if connected
-    bool pushed = false;
-    try {
-      if (action == 'DELETE') {
-        await SupabaseConfig.client.from(table).delete().eq('id', rowId);
-        pushed = true;
-      } else {
-        final res = await SupabaseConfig.client.from(table).upsert(payload).select();
-        if (res.isNotEmpty) {
+    // 2. Push to Supabase asynchronously in background so UI and buttons remain 100% smooth & instant
+    () async {
+      bool pushed = false;
+      try {
+        if (action == 'DELETE') {
+          await SupabaseConfig.client
+              .from(table)
+              .delete()
+              .eq('id', rowId)
+              .timeout(const Duration(milliseconds: 2500));
           pushed = true;
+        } else {
+          final res = await SupabaseConfig.client
+              .from(table)
+              .upsert(payload)
+              .select()
+              .timeout(const Duration(milliseconds: 2500));
+          if (res.isNotEmpty) {
+            pushed = true;
+          }
         }
+      } catch (e) {
+        debugPrint('Direct Supabase push notice for $table: $e');
       }
-    } catch (e) {
-      debugPrint('Direct Supabase push failed for $table (operating offline): $e');
-    }
 
-    // 3. If offline or push failed, enqueue for automatic background sync
-    if (!pushed) {
-      await OfflineDbHelper.instance.enqueueSync(
-        tableName: table,
-        rowId: rowId,
-        action: action,
-        payload: action != 'DELETE' ? payload : null,
-      );
-      await SyncService.instance.refreshPendingCount();
-    }
+      // 3. If offline, timeout, or push failed, enqueue for automatic background sync
+      if (!pushed) {
+        await OfflineDbHelper.instance.enqueueSync(
+          tableName: table,
+          rowId: rowId,
+          action: action,
+          payload: action != 'DELETE' ? payload : null,
+        );
+        await SyncService.instance.refreshPendingCount();
+      }
+    }();
   }
 
   // Mutations linked to active mandal_id

@@ -97,13 +97,16 @@ class _BankCashScreenState extends State<BankCashScreen> with SingleTickerProvid
   Widget build(BuildContext context) {
     final summary = repository.getSummary();
 
+    final isMobile = MediaQuery.of(context).size.width < 750;
+
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsets.all(isMobile ? 12 : 20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Tabs: Bank | Cash matching Screen 5
           Container(
+            width: double.infinity,
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(8),
@@ -124,7 +127,8 @@ class _BankCashScreenState extends State<BankCashScreen> with SingleTickerProvid
 
           // Bank Table Container
           Container(
-            padding: const EdgeInsets.all(20),
+            width: double.infinity,
+            padding: EdgeInsets.all(isMobile ? 14 : 20),
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(12),
@@ -133,8 +137,11 @@ class _BankCashScreenState extends State<BankCashScreen> with SingleTickerProvid
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                Wrap(
+                  alignment: WrapAlignment.spaceBetween,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: 10,
+                  runSpacing: 8,
                   children: [
                     const Text(
                       'Bank Accounts',
@@ -144,6 +151,9 @@ class _BankCashScreenState extends State<BankCashScreen> with SingleTickerProvid
                       onPressed: _showAddBankDialog,
                       icon: const Icon(Icons.add, size: 16),
                       label: const Text('+ Add Bank'),
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                      ),
                     ),
                   ],
                 ),
@@ -201,20 +211,21 @@ class _BankCashScreenState extends State<BankCashScreen> with SingleTickerProvid
           LayoutBuilder(
             builder: (context, constraints) {
               final count = constraints.maxWidth > 900 ? 3 : 2;
+              final ratio = constraints.maxWidth > 900 ? 2.2 : 1.45;
               return GridView.count(
                 crossAxisCount: count,
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
-                crossAxisSpacing: 12,
-                mainAxisSpacing: 12,
-                childAspectRatio: 2.2,
+                crossAxisSpacing: 10,
+                mainAxisSpacing: 10,
+                childAspectRatio: ratio,
                 children: [
-                  _buildBalanceTile('Bank Balance', CurrencyFormatter.format(summary.bankBalance), AppColors.infoBlue, Icons.account_balance),
-                  _buildBalanceTile('Cash Balance', CurrencyFormatter.format(summary.cashBalance), AppColors.warningOrange, Icons.payments),
-                  _buildBalanceTile('Total Balance', CurrencyFormatter.format(summary.totalBalance), AppColors.successGreen, Icons.account_balance_wallet),
-                  _buildBalanceTile('Deposits', CurrencyFormatter.format(summary.deposits), AppColors.successGreen, Icons.arrow_downward),
-                  _buildBalanceTile('Withdrawals', CurrencyFormatter.format(summary.withdrawals), AppColors.expenseRed, Icons.arrow_upward),
-                  _buildBalanceTile('Net Change', CurrencyFormatter.format(summary.netChange), const Color(0xFF0D9488), Icons.trending_up),
+                  _buildBalanceTile('Bank Balance', CurrencyFormatter.format(summary.bankBalance), AppColors.infoBlue, Icons.account_balance, isMobile),
+                  _buildBalanceTile('Cash Balance', CurrencyFormatter.format(summary.cashBalance), AppColors.warningOrange, Icons.payments, isMobile),
+                  _buildBalanceTile('Total Balance', CurrencyFormatter.format(summary.totalBalance), AppColors.successGreen, Icons.account_balance_wallet, isMobile),
+                  _buildBalanceTile('Deposits', CurrencyFormatter.format(summary.deposits), AppColors.successGreen, Icons.arrow_downward, isMobile),
+                  _buildBalanceTile('Withdrawals', CurrencyFormatter.format(summary.withdrawals), AppColors.expenseRed, Icons.arrow_upward, isMobile),
+                  _buildBalanceTile('Net Change', CurrencyFormatter.format(summary.netChange), const Color(0xFF0D9488), Icons.trending_up, isMobile),
                 ],
               );
             },
@@ -224,9 +235,9 @@ class _BankCashScreenState extends State<BankCashScreen> with SingleTickerProvid
     );
   }
 
-  Widget _buildBalanceTile(String title, String value, Color color, IconData icon) {
+  Widget _buildBalanceTile(String title, String value, Color color, IconData icon, bool isMobile) {
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: EdgeInsets.symmetric(horizontal: isMobile ? 8 : 12, vertical: isMobile ? 8 : 10),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(10),
@@ -235,22 +246,40 @@ class _BankCashScreenState extends State<BankCashScreen> with SingleTickerProvid
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(10),
+            padding: EdgeInsets.all(isMobile ? 6 : 8),
             decoration: BoxDecoration(
               color: color.withAlpha(25),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Icon(icon, color: color, size: 22),
+            child: Icon(icon, color: color, size: isMobile ? 18 : 22),
           ),
-          const SizedBox(width: 14),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(title, style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
-              const SizedBox(height: 2),
-              Text(value, style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: color)),
-            ],
+          SizedBox(width: isMobile ? 8 : 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(fontSize: isMobile ? 10 : 11, color: AppColors.textSecondary),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 2),
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    value,
+                    style: TextStyle(
+                      fontSize: isMobile ? 14 : 17,
+                      fontWeight: FontWeight.bold,
+                      color: color,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),

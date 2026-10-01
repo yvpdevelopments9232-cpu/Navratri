@@ -81,10 +81,13 @@ class _UsersScreenState extends State<UsersScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isMobile = MediaQuery.of(context).size.width < 750;
+
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsets.all(isMobile ? 12 : 20),
       child: Container(
-        padding: const EdgeInsets.all(20),
+        width: double.infinity,
+        padding: EdgeInsets.all(isMobile ? 14 : 20),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(12),
@@ -93,16 +96,20 @@ class _UsersScreenState extends State<UsersScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            Wrap(
+              alignment: WrapAlignment.spaceBetween,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: 12,
+              runSpacing: 10,
               children: [
-                const Row(
+                Row(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.admin_panel_settings, color: AppColors.primaryMaroon),
-                    SizedBox(width: 8),
+                    const Icon(Icons.admin_panel_settings, color: AppColors.primaryMaroon),
+                    const SizedBox(width: 8),
                     Text(
-                      'User & Permission Management (RBAC)',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                      'User & Permission Management',
+                      style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
                     ),
                   ],
                 ),

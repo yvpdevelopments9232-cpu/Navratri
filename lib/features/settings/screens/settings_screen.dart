@@ -180,10 +180,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isMobile = MediaQuery.of(context).size.width < 750;
+
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsets.all(isMobile ? 12 : 20),
       child: Container(
-        padding: const EdgeInsets.all(20),
+        width: double.infinity,
+        padding: EdgeInsets.all(isMobile ? 14 : 20),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(12),
@@ -199,37 +202,71 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Wrap(
-                      alignment: WrapAlignment.spaceBetween,
-                      crossAxisAlignment: WrapCrossAlignment.center,
-                      spacing: 12,
-                      runSpacing: 10,
-                      children: [
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(Icons.settings, color: AppColors.primaryMaroon),
-                            const SizedBox(width: 8),
-                            Text(
-                              AppStrings.tr('मंडळ ERP सेटिंग्ज व संरचना', 'Mandal ERP Settings & Configuration'),
-                              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
-                            ),
-                          ],
-                        ),
-                        ElevatedButton.icon(
-                          onPressed: _isSaving ? null : _saveSettings,
-                          icon: _isSaving
-                              ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                              : const Icon(Icons.check, size: 16),
-                          label: Text(_isSaving ? AppStrings.tr('जतन होत आहे...', 'Saving...') : AppStrings.saveSettings),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primaryMaroon,
-                            foregroundColor: Colors.white,
+                    if (isCompact)
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              const Icon(Icons.settings, color: AppColors.primaryMaroon),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  AppStrings.tr('मंडळ ERP सेटिंग्ज व संरचना', 'Mandal ERP Settings & Configuration'),
+                                  style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
                           ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 20),
+                          const SizedBox(height: 10),
+                          SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton.icon(
+                              onPressed: _isSaving ? null : _saveSettings,
+                              icon: _isSaving
+                                  ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                                  : const Icon(Icons.check, size: 16),
+                              label: Text(_isSaving ? AppStrings.tr('जतन होत आहे...', 'Saving...') : AppStrings.saveSettings),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.primaryMaroon,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(vertical: 10),
+                              ),
+                            ),
+                          ),
+                        ],
+                      )
+                    else
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.settings, color: AppColors.primaryMaroon),
+                              const SizedBox(width: 8),
+                              Text(
+                                AppStrings.tr('मंडळ ERP सेटिंग्ज व संरचना', 'Mandal ERP Settings & Configuration'),
+                                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                              ),
+                            ],
+                          ),
+                          ElevatedButton.icon(
+                            onPressed: _isSaving ? null : _saveSettings,
+                            icon: _isSaving
+                                ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                                : const Icon(Icons.check, size: 16),
+                            label: Text(_isSaving ? AppStrings.tr('जतन होत आहे...', 'Saving...') : AppStrings.saveSettings),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.primaryMaroon,
+                              foregroundColor: Colors.white,
+                            ),
+                          ),
+                        ],
+                      ),
+                    const SizedBox(height: 16),
 
                     if (isCompact) ...[
                       // Mobile: Horizontal Scrollable Tab Bar
@@ -428,6 +465,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Widget _buildMandalProfileTab() {
+    final isMobile = MediaQuery.of(context).size.width < 700;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -454,61 +492,106 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
         ),
         const SizedBox(height: 14),
-        Row(
-          children: [
-            Expanded(
-              child: TextField(
-                controller: contactCtrl,
-                decoration: InputDecoration(
-                  labelText: AppStrings.tr('संपर्क क्रमांक', 'Contact No.'),
-                  prefixIcon: const Icon(Icons.phone),
-                ),
-              ),
+        if (isMobile) ...[
+          TextField(
+            controller: contactCtrl,
+            decoration: InputDecoration(
+              labelText: AppStrings.tr('संपर्क क्रमांक', 'Contact No.'),
+              prefixIcon: const Icon(Icons.phone),
             ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: TextField(
-                controller: emailCtrl,
-                decoration: InputDecoration(
-                  labelText: AppStrings.tr('ईमेल पत्ता', 'Email Address'),
-                  prefixIcon: const Icon(Icons.email),
-                ),
-              ),
+          ),
+          const SizedBox(height: 14),
+          TextField(
+            controller: emailCtrl,
+            decoration: InputDecoration(
+              labelText: AppStrings.tr('ईमेल पत्ता', 'Email Address'),
+              prefixIcon: const Icon(Icons.email),
             ),
-          ],
-        ),
-        const SizedBox(height: 14),
-        Row(
-          children: [
-            Expanded(
-              child: TextField(
-                controller: yearCtrl,
-                decoration: InputDecoration(
-                  labelText: AppStrings.tr('उत्सव वर्ष', 'Festival Year'),
-                  prefixIcon: const Icon(Icons.calendar_month),
-                ),
-              ),
+          ),
+          const SizedBox(height: 14),
+          TextField(
+            controller: yearCtrl,
+            decoration: InputDecoration(
+              labelText: AppStrings.tr('उत्सव वर्ष', 'Festival Year'),
+              prefixIcon: const Icon(Icons.calendar_month),
             ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Row(
-                children: [
-                  _buildLogoPreview(),
-                  const SizedBox(width: 12),
-                  ElevatedButton.icon(
-                    onPressed: _pickAndSaveLogo,
-                    icon: const Icon(Icons.photo_camera, size: 16),
-                    label: Text(AppStrings.changeLogo),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primaryMaroon,
-                      foregroundColor: Colors.white,
-                    ),
+          ),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              _buildLogoPreview(),
+              const SizedBox(width: 14),
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: _pickAndSaveLogo,
+                  icon: const Icon(Icons.photo_camera, size: 16),
+                  label: Text(AppStrings.changeLogo),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primaryMaroon,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
                   ),
-                ],
+                ),
               ),
-            ),
-          ],
-        ),
+            ],
+          ),
+        ] else ...[
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: contactCtrl,
+                  decoration: InputDecoration(
+                    labelText: AppStrings.tr('संपर्क क्रमांक', 'Contact No.'),
+                    prefixIcon: const Icon(Icons.phone),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: TextField(
+                  controller: emailCtrl,
+                  decoration: InputDecoration(
+                    labelText: AppStrings.tr('ईमेल पत्ता', 'Email Address'),
+                    prefixIcon: const Icon(Icons.email),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: yearCtrl,
+                  decoration: InputDecoration(
+                    labelText: AppStrings.tr('उत्सव वर्ष', 'Festival Year'),
+                    prefixIcon: const Icon(Icons.calendar_month),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Row(
+                  children: [
+                    _buildLogoPreview(),
+                    const SizedBox(width: 12),
+                    ElevatedButton.icon(
+                      onPressed: _pickAndSaveLogo,
+                      icon: const Icon(Icons.photo_camera, size: 16),
+                      label: Text(AppStrings.changeLogo),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primaryMaroon,
+                        foregroundColor: Colors.white,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
       ],
     );
   }

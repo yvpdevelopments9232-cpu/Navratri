@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../core/localization/app_strings.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../models/all_models.dart';
 import '../../../repositories/mandal_repository.dart';
@@ -22,42 +23,50 @@ class _VolunteersScreenState extends State<VolunteersScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Row(
+        title: Row(
           children: [
-            Icon(Icons.groups, color: AppColors.primaryMaroon),
-            SizedBox(width: 8),
-            Text('Add Volunteer', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+            const Icon(Icons.groups, color: AppColors.primaryMaroon),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                AppStrings.tr('स्वयंसेवक जोडा', 'Add Volunteer'),
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 17),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
           ],
         ),
-        content: SizedBox(
-          width: 450,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: 'Volunteer Name *')),
-              const SizedBox(height: 12),
-              TextField(controller: mobileCtrl, decoration: const InputDecoration(labelText: 'Mobile Number *'), keyboardType: TextInputType.phone),
-              const SizedBox(height: 12),
-              DropdownButtonFormField<String>(
-                initialValue: selectedDept,
-                decoration: const InputDecoration(labelText: 'Assigned Department'),
-                items: const [
-                  DropdownMenuItem(value: 'Security', child: Text('Security')),
-                  DropdownMenuItem(value: 'Medical', child: Text('Medical')),
-                  DropdownMenuItem(value: 'Decoration', child: Text('Decoration')),
-                  DropdownMenuItem(value: 'Food', child: Text('Food')),
-                  DropdownMenuItem(value: 'Parking', child: Text('Parking')),
-                  DropdownMenuItem(value: 'Crowd Management', child: Text('Crowd Management')),
-                ],
-                onChanged: (val) {
-                  if (val != null) selectedDept = val;
-                },
-              ),
-            ],
+        content: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 450),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(controller: nameCtrl, decoration: InputDecoration(labelText: AppStrings.tr('स्वयंसेवकाचे पूर्ण नाव *', 'Volunteer Name *'))),
+                const SizedBox(height: 12),
+                TextField(controller: mobileCtrl, decoration: InputDecoration(labelText: AppStrings.tr('मोबाईल क्रमांक *', 'Mobile Number *')), keyboardType: TextInputType.phone),
+                const SizedBox(height: 12),
+                DropdownButtonFormField<String>(
+                  initialValue: selectedDept,
+                  decoration: InputDecoration(labelText: AppStrings.tr('नेमून दिलेला विभाग / जबाबदारी', 'Assigned Department')),
+                  items: const [
+                    DropdownMenuItem(value: 'Security', child: Text('Security (सुरक्षा व गर्दी नियंत्रण)')),
+                    DropdownMenuItem(value: 'Medical', child: Text('Medical (वैद्यकीय मदत)')),
+                    DropdownMenuItem(value: 'Decoration', child: Text('Decoration (सजावट व्यवस्था)')),
+                    DropdownMenuItem(value: 'Food', child: Text('Food (महाप्रसाद वाटप)')),
+                    DropdownMenuItem(value: 'Parking', child: Text('Parking (वाहनतळ व्यवस्था)')),
+                    DropdownMenuItem(value: 'Crowd Management', child: Text('Crowd Management (रांग व्यवस्थापन)')),
+                  ],
+                  onChanged: (val) {
+                    if (val != null) selectedDept = val;
+                  },
+                ),
+              ],
+            ),
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(AppStrings.tr('रद्द करा', 'Cancel'))),
           ElevatedButton(
             onPressed: () {
               if (nameCtrl.text.trim().isEmpty || mobileCtrl.text.trim().isEmpty) return;
@@ -74,7 +83,7 @@ class _VolunteersScreenState extends State<VolunteersScreen> {
               Navigator.pop(ctx);
               setState(() {});
             },
-            child: const Text('Save Volunteer'),
+            child: Text(AppStrings.tr('जतन करा', 'Save Volunteer')),
           ),
         ],
       ),
@@ -83,10 +92,14 @@ class _VolunteersScreenState extends State<VolunteersScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isMobile = screenWidth < 700;
+
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsets.all(isMobile ? 12 : 20),
       child: Container(
-        padding: const EdgeInsets.all(20),
+        width: double.infinity,
+        padding: EdgeInsets.all(isMobile ? 12 : 20),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(12),
@@ -95,89 +108,207 @@ class _VolunteersScreenState extends State<VolunteersScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Row(
-                  children: [
-                    Icon(Icons.groups, color: AppColors.primaryMaroon),
-                    SizedBox(width: 8),
-                    Text(
-                      'Volunteer Management & Duties',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
-                    ),
-                  ],
-                ),
-                ElevatedButton.icon(
-                  onPressed: _showAddVolunteerDialog,
-                  icon: const Icon(Icons.add, size: 16),
-                  label: const Text('+ Add Volunteer'),
-                ),
-              ],
-            ),
-            const SizedBox(height: 18),
-
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: DataTable(
-                headingRowColor: WidgetStateProperty.all(const Color(0xFFF8FAFC)),
-                columns: const [
-                  DataColumn(label: Text('Name', style: TextStyle(fontWeight: FontWeight.bold))),
-                  DataColumn(label: Text('Mobile', style: TextStyle(fontWeight: FontWeight.bold))),
-                  DataColumn(label: Text('Department', style: TextStyle(fontWeight: FontWeight.bold))),
-                  DataColumn(label: Text('Status', style: TextStyle(fontWeight: FontWeight.bold))),
-                  DataColumn(label: Text('Action', style: TextStyle(fontWeight: FontWeight.bold))),
-                ],
-                rows: repository.volunteers.map((v) {
-                  return DataRow(
-                    cells: [
-                      DataCell(
-                        Row(
-                          children: [
-                            CircleAvatar(
-                              radius: 14,
-                              backgroundColor: AppColors.cyanAccent.withAlpha(40),
-                              child: Text(
-                                v.name[0],
-                                style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.infoBlue, fontSize: 12),
-                              ),
-                            ),
-                            const SizedBox(width: 10),
-                            Text(v.name, style: const TextStyle(fontWeight: FontWeight.w600)),
-                          ],
-                        ),
-                      ),
-                      DataCell(Text(v.mobile)),
-                      DataCell(
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: AppColors.borderLight,
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Text(v.department, style: const TextStyle(fontSize: 11)),
-                        ),
-                      ),
-                      DataCell(StatusBadge(status: v.status)),
-                      DataCell(
-                        Row(
-                          children: [
-                            IconButton(icon: const Icon(Icons.edit, size: 18, color: AppColors.infoBlue), onPressed: () {}),
-                            IconButton(
-                              icon: const Icon(Icons.delete, size: 18, color: AppColors.expenseRed),
-                              onPressed: () {
-                                repository.volunteers.removeWhere((i) => i.id == v.id);
-                                setState(() {});
-                              },
-                            ),
-                          ],
+            if (isMobile)
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(Icons.groups, color: AppColors.primaryMaroon, size: 22),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          AppStrings.tr('स्वयंसेवक व सेवा दल', 'Volunteer Management'),
+                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                     ],
-                  );
-                }).toList(),
+                  ),
+                  const SizedBox(height: 10),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: _showAddVolunteerDialog,
+                      icon: const Icon(Icons.add, size: 16),
+                      label: Text(AppStrings.tr('+ स्वयंसेवक जोडा', '+ Add Volunteer')),
+                    ),
+                  ),
+                ],
+              )
+            else
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Row(
+                      children: [
+                        const Icon(Icons.groups, color: AppColors.primaryMaroon),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            AppStrings.tr('स्वयंसेवक व सेवा दल व्यवस्थापन (Volunteers & Duties)', 'Volunteer Management & Duties'),
+                            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  ElevatedButton.icon(
+                    onPressed: _showAddVolunteerDialog,
+                    icon: const Icon(Icons.add, size: 16),
+                    label: Text(AppStrings.tr('+ स्वयंसेवक जोडा', '+ Add Volunteer')),
+                  ),
+                ],
               ),
-            ),
+            const SizedBox(height: 18),
+
+            if (repository.volunteers.isEmpty)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 36),
+                child: Center(
+                  child: Text(
+                    AppStrings.tr('कोणताही स्वयंसेवक नोंदवलेला नाही', 'No volunteers registered yet'),
+                    style: const TextStyle(color: AppColors.textSecondary),
+                  ),
+                ),
+              )
+            else if (isMobile)
+              ListView.separated(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: repository.volunteers.length,
+                separatorBuilder: (_, _) => const SizedBox(height: 10),
+                itemBuilder: (ctx, idx) {
+                  final v = repository.volunteers[idx];
+                  return Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF8FAFC),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: AppColors.borderLight),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Row(
+                              children: [
+                                CircleAvatar(
+                                  radius: 14,
+                                  backgroundColor: AppColors.cyanAccent.withAlpha(40),
+                                  child: Text(
+                                    v.name.isNotEmpty ? v.name[0] : 'V',
+                                    style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.infoBlue, fontSize: 12),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Text(v.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppColors.textPrimary)),
+                              ],
+                            ),
+                            StatusBadge(status: v.status),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                              decoration: BoxDecoration(
+                                color: AppColors.primaryMaroon.withAlpha(20),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Text(v.department, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.primaryMaroon)),
+                            ),
+                            Row(
+                              children: [
+                                Text('📞 ${v.mobile}', style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                                const SizedBox(width: 8),
+                                IconButton(
+                                  icon: const Icon(Icons.delete, size: 18, color: AppColors.expenseRed),
+                                  padding: EdgeInsets.zero,
+                                  constraints: const BoxConstraints(),
+                                  onPressed: () {
+                                    repository.volunteers.removeWhere((i) => i.id == v.id);
+                                    setState(() {});
+                                  },
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              )
+            else
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: DataTable(
+                  headingRowColor: WidgetStateProperty.all(const Color(0xFFF8FAFC)),
+                  columns: [
+                    DataColumn(label: Text(AppStrings.tr('नाव', 'Name'), style: const TextStyle(fontWeight: FontWeight.bold))),
+                    DataColumn(label: Text(AppStrings.tr('मोबाईल', 'Mobile'), style: const TextStyle(fontWeight: FontWeight.bold))),
+                    DataColumn(label: Text(AppStrings.tr('विभाग', 'Department'), style: const TextStyle(fontWeight: FontWeight.bold))),
+                    DataColumn(label: Text(AppStrings.tr('स्थिती', 'Status'), style: const TextStyle(fontWeight: FontWeight.bold))),
+                    DataColumn(label: Text(AppStrings.tr('क्रिया', 'Action'), style: const TextStyle(fontWeight: FontWeight.bold))),
+                  ],
+                  rows: repository.volunteers.map((v) {
+                    return DataRow(
+                      cells: [
+                        DataCell(
+                          Row(
+                            children: [
+                              CircleAvatar(
+                                radius: 14,
+                                backgroundColor: AppColors.cyanAccent.withAlpha(40),
+                                child: Text(
+                                  v.name.isNotEmpty ? v.name[0] : 'V',
+                                  style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.infoBlue, fontSize: 12),
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Text(v.name, style: const TextStyle(fontWeight: FontWeight.w600)),
+                            ],
+                          ),
+                        ),
+                        DataCell(Text(v.mobile)),
+                        DataCell(
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: AppColors.borderLight,
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(v.department, style: const TextStyle(fontSize: 11)),
+                          ),
+                        ),
+                        DataCell(StatusBadge(status: v.status)),
+                        DataCell(
+                          Row(
+                            children: [
+                              IconButton(icon: const Icon(Icons.edit, size: 18, color: AppColors.infoBlue), onPressed: () {}),
+                              IconButton(
+                                icon: const Icon(Icons.delete, size: 18, color: AppColors.expenseRed),
+                                onPressed: () {
+                                  repository.volunteers.removeWhere((i) => i.id == v.id);
+                                  setState(() {});
+                                },
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    );
+                  }).toList(),
+                ),
+              ),
           ],
         ),
       ),

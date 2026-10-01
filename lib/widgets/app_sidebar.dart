@@ -1,6 +1,8 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import '../core/localization/app_strings.dart';
 import '../core/theme/app_theme.dart';
+import '../repositories/mandal_repository.dart';
 
 class NavItem {
   final int index;
@@ -45,68 +47,122 @@ class AppSidebar extends StatelessWidget {
     NavItem(21, AppStrings.navSettings, Icons.settings_outlined),
   ];
 
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 250,
-      decoration: const BoxDecoration(
-        color: Color(0xFF1E293B), // Dark Navy/Charcoal Sidebar matching mockup
-        border: Border(right: BorderSide(color: Color(0xFF334155))),
-      ),
-      child: Column(
-        children: [
-          // Sidebar Header
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-            decoration: const BoxDecoration(
-              color: Color(0xFF0F172A),
-              border: Border(bottom: BorderSide(color: Color(0xFF334155))),
-            ),
-            child: Row(
-              children: [
-                ClipOval(
-                  child: Image.asset(
-                    'assets/images/app_logo.png',
-                    width: 36,
-                    height: 36,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) => Container(
-                      padding: const EdgeInsets.all(6),
-                      decoration: BoxDecoration(
-                        color: AppColors.brightGold,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: const Icon(Icons.temple_hindu, color: AppColors.primaryMaroon, size: 20),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        AppStrings.tr('नवरात्र ERP', 'NAVRATRI ERP'),
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 0.5,
-                        ),
-                      ),
-                      Text(
-                        AppStrings.tr('उत्सव व्यवस्थापन', 'Utsav Management'),
-                        style: const TextStyle(
-                          color: AppColors.accentGold,
-                          fontSize: 10,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+  Widget _buildSidebarLogo() {
+    final logoUrl = MandalRepository().mandalProfile.logoUrl;
+    if (logoUrl != null && logoUrl.isNotEmpty) {
+      try {
+        final clean = logoUrl.contains(',') ? logoUrl.split(',').last : logoUrl;
+        final bytes = base64Decode(clean);
+        return Container(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            border: Border.all(color: AppColors.brightGold, width: 1.5),
+          ),
+          child: ClipOval(
+            child: Image.memory(
+              bytes,
+              width: 40,
+              height: 40,
+              fit: BoxFit.cover,
+              errorBuilder: (_, _, _) => _buildFallbackLogo(),
             ),
           ),
+        );
+      } catch (_) {}
+    }
+    return _buildFallbackLogo();
+  }
+
+  Widget _buildFallbackLogo() {
+    return Container(
+      width: 40,
+      height: 40,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        border: Border.all(color: AppColors.brightGold, width: 1.5),
+      ),
+      child: ClipOval(
+        child: Image.asset(
+          'assets/images/app_logo.png',
+          width: 40,
+          height: 40,
+          fit: BoxFit.cover,
+          errorBuilder: (_, _, _) => Container(
+            color: AppColors.brightGold,
+            child: const Icon(Icons.temple_hindu, color: AppColors.primaryMaroon, size: 22),
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<bool>(
+      valueListenable: AppStrings.languageNotifier,
+      builder: (context, isMarathi, _) {
+        final mandal = MandalRepository().mandalProfile;
+        final mandalName = mandal.name.isNotEmpty
+            ? mandal.name
+            : AppStrings.tr('श्री शिवछत्रपती नवरात्र उत्सव मंडळ', 'Shree Shivchhatrapati Navratri Mandal');
+        final subtitle = mandal.address.isNotEmpty
+            ? mandal.address
+            : AppStrings.tr('उत्सव वर्ष: ${mandal.festivalYear}', 'Festival Year: ${mandal.festivalYear}');
+
+        return Container(
+          width: 250,
+          decoration: const BoxDecoration(
+            color: Color(0xFF1E293B), // Dark Navy/Charcoal Sidebar
+            border: Border(right: BorderSide(color: Color(0xFF334155))),
+          ),
+          child: Column(
+            children: [
+              // Sidebar Header with Mandal Profile Image & Mandal Name
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                decoration: const BoxDecoration(
+                  color: Color(0xFF0F172A),
+                  border: Border(bottom: BorderSide(color: Color(0xFF334155))),
+                ),
+                child: Row(
+                  children: [
+                    _buildSidebarLogo(),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            mandalName,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 0.2,
+                              height: 1.2,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            subtitle,
+                            style: const TextStyle(
+                              color: AppColors.accentGold,
+                              fontSize: 10,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
           // Navigation List
           Expanded(
             child: ListView.builder(
@@ -190,5 +246,7 @@ class AppSidebar extends StatelessWidget {
         ],
       ),
     );
+  },
+);
   }
 }

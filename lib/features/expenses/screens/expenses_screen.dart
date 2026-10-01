@@ -64,11 +64,17 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                 child: const Icon(Icons.shopping_bag_outlined, color: AppColors.expenseRed, size: 20),
               ),
               const SizedBox(width: 8),
-              const Text('Add Expense', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+              Expanded(
+                child: Text(
+                  AppStrings.tr('नवीन खर्च नोंदवा', 'Add Expense'),
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 17),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
             ],
           ),
-          content: SizedBox(
-            width: 550,
+          content: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 550),
             child: SingleChildScrollView(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -244,6 +250,9 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isMobile = screenWidth < 700;
+
     final filteredExpenses = repository.expenses.where((e) {
       final q = _searchQuery.toLowerCase();
       return e.description.toLowerCase().contains(q) ||
@@ -253,9 +262,10 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
     }).toList();
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsets.all(isMobile ? 12 : 20),
       child: Container(
-        padding: const EdgeInsets.all(20),
+        width: double.infinity,
+        padding: EdgeInsets.all(isMobile ? 12 : 20),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(12),
@@ -264,41 +274,94 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                const Icon(Icons.receipt_long, color: AppColors.expenseRed),
-                const SizedBox(width: 8),
-                Text(
-                  AppStrings.tr('खर्च व्यवस्थापन', 'Expense Management'),
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
-                ),
-                const Spacer(),
-                SizedBox(
-                  width: 250,
-                  height: 40,
-                  child: TextField(
-                    onChanged: (val) => setState(() => _searchQuery = val),
-                    decoration: InputDecoration(
-                      hintText: AppStrings.tr('खर्च तपशील / विक्रेता शोधा...', 'Search expense / vendor...'),
-                      prefixIcon: const Icon(Icons.search, size: 18),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                      filled: true,
-                      fillColor: const Color(0xFFF8FAFC),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: const BorderSide(color: AppColors.borderLight),
+            if (isMobile)
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(Icons.receipt_long, color: AppColors.expenseRed, size: 22),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          AppStrings.tr('खर्च व्यवस्थापन', 'Expense Management'),
+                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: SizedBox(
+                          height: 40,
+                          child: TextField(
+                            onChanged: (val) => setState(() => _searchQuery = val),
+                            decoration: InputDecoration(
+                              hintText: AppStrings.tr('खर्च / विक्रेता शोधा...', 'Search...'),
+                              prefixIcon: const Icon(Icons.search, size: 18),
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                              filled: true,
+                              fillColor: const Color(0xFFF8FAFC),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                                borderSide: const BorderSide(color: AppColors.borderLight),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      ElevatedButton.icon(
+                        onPressed: _showAddExpenseDialog,
+                        icon: const Icon(Icons.add, size: 16),
+                        label: Text(AppStrings.tr('+ खर्च', '+ Add')),
+                      ),
+                    ],
+                  ),
+                ],
+              )
+            else
+              Row(
+                children: [
+                  const Icon(Icons.receipt_long, color: AppColors.expenseRed),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      AppStrings.tr('खर्च व्यवस्थापन (Expense Management)', 'Expense Management'),
+                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  SizedBox(
+                    width: 220,
+                    height: 40,
+                    child: TextField(
+                      onChanged: (val) => setState(() => _searchQuery = val),
+                      decoration: InputDecoration(
+                        hintText: AppStrings.tr('खर्च तपशील / विक्रेता शोधा...', 'Search expense / vendor...'),
+                        prefixIcon: const Icon(Icons.search, size: 18),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                        filled: true,
+                        fillColor: const Color(0xFFF8FAFC),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: const BorderSide(color: AppColors.borderLight),
+                        ),
                       ),
                     ),
                   ),
-                ),
-                const SizedBox(width: 12),
-                ElevatedButton.icon(
-                  onPressed: _showAddExpenseDialog,
-                  icon: const Icon(Icons.add, size: 16),
-                  label: Text(AppStrings.addExpense),
-                ),
-              ],
-            ),
+                  const SizedBox(width: 12),
+                  ElevatedButton.icon(
+                    onPressed: _showAddExpenseDialog,
+                    icon: const Icon(Icons.add, size: 16),
+                    label: Text(AppStrings.addExpense),
+                  ),
+                ],
+              ),
             const SizedBox(height: 18),
 
             if (filteredExpenses.isEmpty)
@@ -309,35 +372,85 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                     children: [
                       const Icon(Icons.inbox_outlined, size: 54, color: AppColors.textSecondary),
                       const SizedBox(height: 12),
-                      const Text(
-                        'कोणतीही खर्चाची नोंद उपलब्ध नाही (No expense records found)',
-                        style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: AppColors.textSecondary),
+                      Text(
+                        AppStrings.tr('कोणतीही खर्चाची नोंद उपलब्ध नाही', 'No expense records found'),
+                        style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: AppColors.textSecondary),
                       ),
                       const SizedBox(height: 6),
-                      const Text(
-                        'नवीन खर्चाची नोंद करण्यासाठी वरील "+ Add Expense" बटनावर क्लिक करा.',
-                        style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                      Text(
+                        AppStrings.tr('नवीन खर्चाची नोंद करण्यासाठी वरील बटणावर क्लिक करा.', 'Click the button above to add an expense.'),
+                        style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
                       ),
                     ],
                   ),
                 ),
+              )
+            else if (isMobile)
+              ListView.separated(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: filteredExpenses.length,
+                separatorBuilder: (_, _) => const SizedBox(height: 10),
+                itemBuilder: (ctx, idx) {
+                  final e = filteredExpenses[idx];
+                  return Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF8FAFC),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: AppColors.borderLight),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(e.expenseNumber, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.primaryMaroon)),
+                            Text(
+                              CurrencyFormatter.format(e.amount),
+                              style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.expenseRed, fontSize: 15),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        Text(e.description, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppColors.textPrimary)),
+                        const SizedBox(height: 6),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: AppColors.primaryMaroon.withAlpha(20),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Text(e.categoryName, style: const TextStyle(fontSize: 11, color: AppColors.primaryMaroon, fontWeight: FontWeight.bold)),
+                            ),
+                            Text('${e.date} • ${e.paymentMode} • ${e.vendorName ?? e.paidBy}', style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+                          ],
+                        ),
+                      ],
+                    ),
+                  );
+                },
               )
             else
               SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 child: DataTable(
                   headingRowColor: WidgetStateProperty.all(const Color(0xFFF8FAFC)),
-                  columns: const [
-                    DataColumn(label: Text('Expense No', style: TextStyle(fontWeight: FontWeight.bold))),
-                    DataColumn(label: Text('Date', style: TextStyle(fontWeight: FontWeight.bold))),
-                    DataColumn(label: Text('Category', style: TextStyle(fontWeight: FontWeight.bold))),
-                    DataColumn(label: Text('Vendor', style: TextStyle(fontWeight: FontWeight.bold))),
-                    DataColumn(label: Text('Description', style: TextStyle(fontWeight: FontWeight.bold))),
-                    DataColumn(label: Text('Amount', style: TextStyle(fontWeight: FontWeight.bold))),
-                    DataColumn(label: Text('Payment Mode', style: TextStyle(fontWeight: FontWeight.bold))),
-                    DataColumn(label: Text('Paid By', style: TextStyle(fontWeight: FontWeight.bold))),
-                    DataColumn(label: Text('Status', style: TextStyle(fontWeight: FontWeight.bold))),
-                    DataColumn(label: Text('Action', style: TextStyle(fontWeight: FontWeight.bold))),
+                  columns: [
+                    DataColumn(label: Text(AppStrings.tr('व्हाउचर क्र.', 'Expense No'), style: const TextStyle(fontWeight: FontWeight.bold))),
+                    DataColumn(label: Text(AppStrings.tr('तारीख', 'Date'), style: const TextStyle(fontWeight: FontWeight.bold))),
+                    DataColumn(label: Text(AppStrings.tr('प्रवर्ग', 'Category'), style: const TextStyle(fontWeight: FontWeight.bold))),
+                    DataColumn(label: Text(AppStrings.tr('विक्रेता', 'Vendor'), style: const TextStyle(fontWeight: FontWeight.bold))),
+                    DataColumn(label: Text(AppStrings.tr('तपशील', 'Description'), style: const TextStyle(fontWeight: FontWeight.bold))),
+                    DataColumn(label: Text(AppStrings.tr('रक्कम', 'Amount'), style: const TextStyle(fontWeight: FontWeight.bold))),
+                    DataColumn(label: Text(AppStrings.tr('पेमेंट पद्धत', 'Payment Mode'), style: const TextStyle(fontWeight: FontWeight.bold))),
+                    DataColumn(label: Text(AppStrings.tr('अदाकर्ता', 'Paid By'), style: const TextStyle(fontWeight: FontWeight.bold))),
+                    DataColumn(label: Text(AppStrings.tr('स्थिती', 'Status'), style: const TextStyle(fontWeight: FontWeight.bold))),
+                    DataColumn(label: Text(AppStrings.tr('बिल', 'Action'), style: const TextStyle(fontWeight: FontWeight.bold))),
                   ],
                   rows: filteredExpenses.map((e) {
                     return DataRow(

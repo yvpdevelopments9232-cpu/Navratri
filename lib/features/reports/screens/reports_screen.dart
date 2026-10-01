@@ -4,6 +4,20 @@ import '../../../core/services/pdf_service.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../repositories/mandal_repository.dart';
 
+class ReportItem {
+  final String key;
+  final String titleMr;
+  final String titleEn;
+  final IconData icon;
+
+  const ReportItem({
+    required this.key,
+    required this.titleMr,
+    required this.titleEn,
+    required this.icon,
+  });
+}
+
 class ReportsScreen extends StatefulWidget {
   const ReportsScreen({super.key});
 
@@ -20,24 +34,94 @@ class _ReportsScreenState extends State<ReportsScreen> {
   final TextEditingController _toController = TextEditingController(text: '31-10-2026');
   final TextEditingController _categoryController = TextEditingController(text: 'All Categories');
 
-  final List<String> financialReports = [
-    'Donation Report',
-    'Expense Report',
-    'Cash Book',
-    'Bank Book',
-    'Income & Expense',
-    'Balance Sheet',
-    'Pending Payment Report',
+  final List<ReportItem> financialReports = const [
+    ReportItem(
+      key: 'Donation Report',
+      titleMr: 'देणगी अहवाल',
+      titleEn: 'Donation Report',
+      icon: Icons.volunteer_activism,
+    ),
+    ReportItem(
+      key: 'Expense Report',
+      titleMr: 'खर्च अहवाल',
+      titleEn: 'Expense Report',
+      icon: Icons.receipt_long,
+    ),
+    ReportItem(
+      key: 'Cash Book',
+      titleMr: 'रोकड वही (कॅश बुक)',
+      titleEn: 'Cash Book',
+      icon: Icons.payments_outlined,
+    ),
+    ReportItem(
+      key: 'Bank Book',
+      titleMr: 'बँक वही (बँक बुक)',
+      titleEn: 'Bank Book',
+      icon: Icons.account_balance,
+    ),
+    ReportItem(
+      key: 'Income & Expense',
+      titleMr: 'उत्पन्न आणि खर्च',
+      titleEn: 'Income & Expense',
+      icon: Icons.compare_arrows,
+    ),
+    ReportItem(
+      key: 'Balance Sheet',
+      titleMr: 'ताळेबंद (बॅलन्स शीट)',
+      titleEn: 'Balance Sheet',
+      icon: Icons.account_tree_outlined,
+    ),
+    ReportItem(
+      key: 'Pending Payment Report',
+      titleMr: 'प्रलंबित देणी अहवाल',
+      titleEn: 'Pending Payments',
+      icon: Icons.pending_actions,
+    ),
   ];
 
-  final List<String> festivalReports = [
-    'Event Report',
-    'Member Report',
-    'Volunteer Report',
-    'Vendor Report',
-    'Sponsorship Report',
-    'Inventory Report',
-    'Registration Report',
+  final List<ReportItem> festivalReports = const [
+    ReportItem(
+      key: 'Event Report',
+      titleMr: 'कार्यक्रम अहवाल',
+      titleEn: 'Event Report',
+      icon: Icons.celebration,
+    ),
+    ReportItem(
+      key: 'Member Report',
+      titleMr: 'सदस्य यादी अहवाल',
+      titleEn: 'Member Report',
+      icon: Icons.people_outline,
+    ),
+    ReportItem(
+      key: 'Volunteer Report',
+      titleMr: 'स्वयंसेवक अहवाल',
+      titleEn: 'Volunteer Report',
+      icon: Icons.badge_outlined,
+    ),
+    ReportItem(
+      key: 'Vendor Report',
+      titleMr: 'व्यापारी अहवाल',
+      titleEn: 'Vendor Report',
+      icon: Icons.storefront,
+    ),
+    ReportItem(
+      key: 'Sponsorship Report',
+      titleMr: 'प्रायोजक अहवाल',
+      titleEn: 'Sponsorship Report',
+      icon: Icons.handshake_outlined,
+    ),
+    ReportItem(
+      key: 'Inventory Report',
+      titleMr: 'साहित्य / इन्व्हेंटरी',
+      titleEn: 'Inventory Report',
+      icon: Icons.inventory_2_outlined,
+    ),
+    ReportItem(
+      key: 'Registration Report',
+      titleMr: 'गरबा नोंदणी अहवाल',
+      titleEn: 'Registration Report',
+      icon: Icons.confirmation_number_outlined,
+    ),
   ];
 
   @override
@@ -48,9 +132,13 @@ class _ReportsScreenState extends State<ReportsScreen> {
     super.dispose();
   }
 
-  void _generatePdf() {
+  void _generatePdf([String? report]) {
+    final target = report ?? selectedReport;
+    if (report != null && report != selectedReport) {
+      setState(() => selectedReport = report);
+    }
     PdfService.printReport(
-      reportType: selectedReport,
+      reportType: target,
       repository: repository,
       fromDate: _fromController.text,
       toDate: _toController.text,
@@ -58,7 +146,10 @@ class _ReportsScreenState extends State<ReportsScreen> {
     );
   }
 
-  void _showReportDataPreview() {
+  void _showReportDataPreview([String? report]) {
+    if (report != null && report != selectedReport) {
+      setState(() => selectedReport = report);
+    }
     showDialog(
       context: context,
       builder: (ctx) {
@@ -455,7 +546,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
 
   Widget _buildFinancialReportsList() {
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: const Color(0xFFF8FAFC),
         borderRadius: BorderRadius.circular(8),
@@ -475,28 +566,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
             ],
           ),
           const Divider(),
-          ...financialReports.map((r) {
-            final isSel = selectedReport == r;
-            return ListTile(
-              dense: true,
-              contentPadding: const EdgeInsets.symmetric(horizontal: 4),
-              leading: Icon(
-                Icons.description_outlined,
-                size: 16,
-                color: isSel ? AppColors.primaryMaroon : AppColors.textSecondary,
-              ),
-              title: Text(
-                r,
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: isSel ? FontWeight.bold : FontWeight.normal,
-                  color: isSel ? AppColors.primaryMaroon : AppColors.textPrimary,
-                ),
-              ),
-              trailing: isSel ? const Icon(Icons.check_circle, size: 16, color: AppColors.primaryMaroon) : null,
-              onTap: () => setState(() => selectedReport = r),
-            );
-          }),
+          ...financialReports.map((r) => _buildReportCard(r)),
         ],
       ),
     );
@@ -504,7 +574,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
 
   Widget _buildFestivalReportsList() {
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: const Color(0xFFF8FAFC),
         borderRadius: BorderRadius.circular(8),
@@ -524,29 +594,105 @@ class _ReportsScreenState extends State<ReportsScreen> {
             ],
           ),
           const Divider(),
-          ...festivalReports.map((r) {
-            final isSel = selectedReport == r;
-            return ListTile(
-              dense: true,
-              contentPadding: const EdgeInsets.symmetric(horizontal: 4),
-              leading: Icon(
-                Icons.insert_chart_outlined,
-                size: 16,
-                color: isSel ? AppColors.primaryMaroon : AppColors.textSecondary,
-              ),
-              title: Text(
-                r,
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: isSel ? FontWeight.bold : FontWeight.normal,
-                  color: isSel ? AppColors.primaryMaroon : AppColors.textPrimary,
-                ),
-              ),
-              trailing: isSel ? const Icon(Icons.check_circle, size: 16, color: AppColors.primaryMaroon) : null,
-              onTap: () => setState(() => selectedReport = r),
-            );
-          }),
+          ...festivalReports.map((r) => _buildReportCard(r)),
         ],
+      ),
+    );
+  }
+
+  Widget _buildReportCard(ReportItem item) {
+    final isSel = selectedReport == item.key;
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      decoration: BoxDecoration(
+        color: isSel ? AppColors.primaryMaroon.withAlpha(12) : Colors.white,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: isSel ? AppColors.primaryMaroon : AppColors.borderLight,
+          width: isSel ? 1.5 : 1.0,
+        ),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(8),
+          onTap: () {
+            setState(() => selectedReport = item.key);
+          },
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+            child: Row(
+              children: [
+                Icon(
+                  item.icon,
+                  size: 20,
+                  color: isSel ? AppColors.primaryMaroon : AppColors.textSecondary,
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        item.titleMr,
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: isSel ? FontWeight.bold : FontWeight.w600,
+                          color: isSel ? AppColors.primaryMaroon : AppColors.textPrimary,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      Text(
+                        item.titleEn,
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: isSel ? AppColors.primaryMaroon.withAlpha(200) : AppColors.textSecondary,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.visibility_outlined, size: 18),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(minWidth: 30, minHeight: 30),
+                      tooltip: AppStrings.tr('पूर्वावलोकन', 'Preview'),
+                      color: AppColors.primaryMaroon,
+                      onPressed: () => _showReportDataPreview(item.key),
+                    ),
+                    const SizedBox(width: 4),
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.expenseRed,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        minimumSize: const Size(0, 28),
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                      ),
+                      onPressed: () => _generatePdf(item.key),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.picture_as_pdf, size: 13),
+                          SizedBox(width: 4),
+                          Text('PDF', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -573,6 +719,28 @@ class _ReportsScreenState extends State<ReportsScreen> {
             ],
           ),
           const Divider(),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+            decoration: BoxDecoration(
+              color: AppColors.primaryMaroon.withAlpha(15),
+              borderRadius: BorderRadius.circular(6),
+              border: Border.all(color: AppColors.primaryMaroon.withAlpha(50)),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.description, size: 16, color: AppColors.primaryMaroon),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    selectedReport,
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: AppColors.primaryMaroon),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
           TextField(
             controller: _fromController,
             decoration: const InputDecoration(
@@ -609,7 +777,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
             children: [
               Expanded(
                 child: ElevatedButton.icon(
-                  onPressed: _showReportDataPreview,
+                  onPressed: () => _showReportDataPreview(selectedReport),
                   icon: const Icon(Icons.visibility, size: 16),
                   label: const Text('View'),
                   style: ElevatedButton.styleFrom(
@@ -622,7 +790,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
               const SizedBox(width: 8),
               Expanded(
                 child: ElevatedButton.icon(
-                  onPressed: _generatePdf,
+                  onPressed: () => _generatePdf(selectedReport),
                   icon: const Icon(Icons.picture_as_pdf, size: 16),
                   label: const Text('PDF'),
                   style: ElevatedButton.styleFrom(
@@ -639,7 +807,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
             children: [
               Expanded(
                 child: OutlinedButton.icon(
-                  onPressed: _generatePdf,
+                  onPressed: () => _generatePdf(selectedReport),
                   icon: const Icon(Icons.print, size: 16),
                   label: const Text('Print'),
                   style: OutlinedButton.styleFrom(

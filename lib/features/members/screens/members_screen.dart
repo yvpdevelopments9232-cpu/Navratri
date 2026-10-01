@@ -80,7 +80,6 @@ class _MembersScreenState extends State<MembersScreen> {
             onPressed: () async {
               if (nameCtrl.text.trim().isEmpty || mobileCtrl.text.trim().isEmpty) return;
               final messenger = ScaffoldMessenger.of(context);
-              final nav = Navigator.of(ctx);
               final newMember = MemberModel(
                 id: OfflineDbHelper.generateId(),
                 memberCode: 'MEM-00${repository.members.length + 1}',
@@ -90,13 +89,24 @@ class _MembersScreenState extends State<MembersScreen> {
                 status: 'Active',
                 address: addressCtrl.text.trim(),
               );
-              await repository.addMember(newMember);
-              if (mounted) {
-                nav.pop();
-                setState(() {});
-                messenger.showSnackBar(
-                  SnackBar(content: Text('${newMember.fullName} added to Mandal!')),
-                );
+              Navigator.pop(ctx);
+              try {
+                await repository.addMember(newMember);
+                if (mounted) {
+                  setState(() {});
+                  messenger.showSnackBar(
+                    SnackBar(
+                      content: Text('${newMember.fullName} added to Mandal!'),
+                      backgroundColor: AppColors.successGreen,
+                    ),
+                  );
+                }
+              } catch (e) {
+                if (mounted) {
+                  messenger.showSnackBar(
+                    SnackBar(content: Text('Error saving member: $e')),
+                  );
+                }
               }
             },
             child: const Text('Save Member'),
@@ -108,6 +118,7 @@ class _MembersScreenState extends State<MembersScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isMobile = MediaQuery.of(context).size.width < 750;
     final filteredMembers = repository.members.where((m) {
       final q = _searchQuery.toLowerCase();
       return m.fullName.toLowerCase().contains(q) ||
@@ -116,9 +127,10 @@ class _MembersScreenState extends State<MembersScreen> {
     }).toList();
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsets.all(isMobile ? 12 : 20),
       child: Container(
-        padding: const EdgeInsets.all(20),
+        width: double.infinity,
+        padding: EdgeInsets.all(isMobile ? 14 : 20),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(12),
@@ -127,55 +139,107 @@ class _MembersScreenState extends State<MembersScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header Bar matching Screen 2
-            Row(
-              children: [
-                const Icon(Icons.people, color: AppColors.primaryMaroon),
-                const SizedBox(width: 8),
-                Text(
-                  AppStrings.tr('मंडळ सभासद', 'Mandal Members'),
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
-                ),
-                const Spacer(),
-                SizedBox(
-                  width: 250,
-                  height: 40,
-                  child: TextField(
-                    onChanged: (val) => setState(() => _searchQuery = val),
-                    decoration: InputDecoration(
-                      hintText: AppStrings.tr('सभासद शोधा...', 'Search member...'),
-                      prefixIcon: const Icon(Icons.search, size: 18),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                      filled: true,
-                      fillColor: const Color(0xFFF8FAFC),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: const BorderSide(color: AppColors.borderLight),
+            // Header Bar
+            if (isMobile)
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(Icons.people, color: AppColors.primaryMaroon),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          AppStrings.tr('मंडळ सभासद', 'Mandal Members'),
+                          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: SizedBox(
+                          height: 40,
+                          child: TextField(
+                            onChanged: (val) => setState(() => _searchQuery = val),
+                            decoration: InputDecoration(
+                              hintText: AppStrings.tr('सभासद शोधा...', 'Search member...'),
+                              prefixIcon: const Icon(Icons.search, size: 18),
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                              filled: true,
+                              fillColor: const Color(0xFFF8FAFC),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                                borderSide: const BorderSide(color: AppColors.borderLight),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      ElevatedButton.icon(
+                        onPressed: _showAddMemberDialog,
+                        icon: const Icon(Icons.add, size: 16),
+                        label: Text(AppStrings.tr('जोडा', 'Add')),
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              )
+            else
+              Row(
+                children: [
+                  const Icon(Icons.people, color: AppColors.primaryMaroon),
+                  const SizedBox(width: 8),
+                  Text(
+                    AppStrings.tr('मंडळ सभासद', 'Mandal Members'),
+                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                  ),
+                  const Spacer(),
+                  SizedBox(
+                    width: 250,
+                    height: 40,
+                    child: TextField(
+                      onChanged: (val) => setState(() => _searchQuery = val),
+                      decoration: InputDecoration(
+                        hintText: AppStrings.tr('सभासद शोधा...', 'Search member...'),
+                        prefixIcon: const Icon(Icons.search, size: 18),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                        filled: true,
+                        fillColor: const Color(0xFFF8FAFC),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: const BorderSide(color: AppColors.borderLight),
+                        ),
                       ),
                     ),
                   ),
-                ),
-                const SizedBox(width: 12),
-                ElevatedButton.icon(
-                  onPressed: _showAddMemberDialog,
-                  icon: const Icon(Icons.add, size: 16),
-                  label: Text(AppStrings.addMember),
-                ),
-                const SizedBox(width: 8),
-                OutlinedButton.icon(
-                  onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Exporting members to Excel/CSV...')),
-                    );
-                  },
-                  icon: const Icon(Icons.file_download_outlined, size: 16),
-                  label: const Text('Export'),
-                ),
-              ],
-            ),
+                  const SizedBox(width: 12),
+                  ElevatedButton.icon(
+                    onPressed: _showAddMemberDialog,
+                    icon: const Icon(Icons.add, size: 16),
+                    label: Text(AppStrings.addMember),
+                  ),
+                  const SizedBox(width: 8),
+                  OutlinedButton.icon(
+                    onPressed: () {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Exporting members to Excel/CSV...')),
+                      );
+                    },
+                    icon: const Icon(Icons.file_download_outlined, size: 16),
+                    label: const Text('Export'),
+                  ),
+                ],
+              ),
             const SizedBox(height: 18),
 
-            // Members Table or Empty State
+            // Members Content
             if (filteredMembers.isEmpty)
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 48),
@@ -197,7 +261,113 @@ class _MembersScreenState extends State<MembersScreen> {
                   ),
                 ),
               )
+            else if (isMobile)
+              // Mobile View: Responsive Member Cards (No horizontal cutoffs)
+              ListView.separated(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: filteredMembers.length,
+                separatorBuilder: (_, _) => const SizedBox(height: 10),
+                itemBuilder: (context, index) {
+                  final m = filteredMembers[index];
+                  return Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF8FAFC),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: AppColors.borderLight),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            CircleAvatar(
+                              radius: 20,
+                              backgroundColor: AppColors.accentGold.withAlpha(50),
+                              child: Text(
+                                m.fullName.isNotEmpty ? m.fullName[0] : 'M',
+                                style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primaryMaroon, fontSize: 16),
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(m.fullName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                                  Text(
+                                    '${m.memberCode} • ${m.role}',
+                                    style: const TextStyle(fontSize: 11, color: AppColors.primaryMaroon, fontWeight: FontWeight.w500),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            StatusBadge(status: m.status),
+                          ],
+                        ),
+                        if (m.address != null && m.address!.isNotEmpty) ...[
+                          const SizedBox(height: 6),
+                          Row(
+                            children: [
+                              const Icon(Icons.location_on_outlined, size: 14, color: AppColors.textSecondary),
+                              const SizedBox(width: 4),
+                              Expanded(
+                                child: Text(
+                                  m.address!,
+                                  style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                        const SizedBox(height: 8),
+                        const Divider(height: 1, color: AppColors.borderLight),
+                        const SizedBox(height: 6),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Row(
+                              children: [
+                                const Icon(Icons.phone, size: 14, color: AppColors.textSecondary),
+                                const SizedBox(width: 4),
+                                Text(
+                                  m.mobile,
+                                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+                                ),
+                              ],
+                            ),
+                            Row(
+                              children: [
+                                IconButton(
+                                  icon: const Icon(Icons.edit_outlined, size: 18, color: AppColors.infoBlue),
+                                  padding: EdgeInsets.zero,
+                                  constraints: const BoxConstraints(),
+                                  onPressed: () {},
+                                ),
+                                const SizedBox(width: 14),
+                                IconButton(
+                                  icon: const Icon(Icons.delete_outline, size: 18, color: AppColors.expenseRed),
+                                  padding: EdgeInsets.zero,
+                                  constraints: const BoxConstraints(),
+                                  onPressed: () async {
+                                    await repository.deleteMember(m.id);
+                                    setState(() {});
+                                  },
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              )
             else
+              // Desktop View: Classic Table
               SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 child: DataTable(

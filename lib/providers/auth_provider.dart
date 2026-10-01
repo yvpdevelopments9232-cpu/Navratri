@@ -131,30 +131,69 @@ class AuthProvider extends ChangeNotifier {
       }
 
       final session = SupabaseConfig.client.auth.currentSession;
-      final savedMandalId = prefs.getString('active_mandal_id');
+      final savedMandalId = prefs.getString('active_mandal_id') ?? MandalRepository().mandalProfile.id;
 
       if (session != null && session.user.id.isNotEmpty) {
         final userId = session.user.id;
-        final profRes = await SupabaseConfig.client.from('profiles').select().eq('id', userId).maybeSingle();
-        final mandalId = profRes?['mandal_id']?.toString() ?? savedMandalId;
+        final mandalId = savedMandalId.isNotEmpty ? savedMandalId : MandalRepository().mandalProfile.id;
 
-        if (mandalId != null && mandalId.isNotEmpty) {
-          await MandalRepository().syncFromSupabase(mandalId: mandalId);
-          _currentProfile = UserProfile(
-            id: userId,
-            mandalId: mandalId,
-            fullName: profRes?['full_name'] ??
-                session.user.userMetadata?['full_name'] ??
-                session.user.email?.split('@').first ??
-                'Admin',
-            mobile: profRes?['mobile'] ?? session.user.phone ?? '',
-            email: session.user.email,
-            role: profRes?['role_key'] ?? 'admin',
-            isMainAdmin: true,
-          );
-          _populateAvailableUsers();
-        }
+        // Immediate offline profile setup for instantaneous startup (< 50ms)
+        _currentProfile = UserProfile(
+          id: userId,
+          mandalId: mandalId,
+          fullName: session.user.userMetadata?['full_name'] ??
+              session.user.email?.split('@').first ??
+              MandalRepository().mandalProfile.name.isNotEmpty
+                  ? MandalRepository().mandalProfile.name
+                  : 'Mandal Admin',
+          mobile: session.user.phone ?? MandalRepository().mandalProfile.contactNumber,
+          email: session.user.email,
+          role: 'admin',
+          isMainAdmin: true,
+        );
+        _populateAvailableUsers();
         _isAuthenticated = true;
+
+        // Immediately unlock app UI
+        _isInitializing = false;
+        notifyListeners();
+
+        // Background non-blocking sync with timeout
+        () async {
+          try {
+            final profRes = await SupabaseConfig.client
+                .from('profiles')
+                .select()
+                .eq('id', userId)
+                .maybeSingle()
+                .timeout(const Duration(seconds: 4));
+
+            final activeMandalId = profRes?['mandal_id']?.toString() ?? mandalId;
+            if (activeMandalId.isNotEmpty) {
+              await MandalRepository()
+                  .syncFromSupabase(mandalId: activeMandalId)
+                  .timeout(const Duration(seconds: 10));
+
+              _currentProfile = UserProfile(
+                id: userId,
+                mandalId: activeMandalId,
+                fullName: profRes?['full_name'] ??
+                    session.user.userMetadata?['full_name'] ??
+                    session.user.email?.split('@').first ??
+                    'Mandal Admin',
+                mobile: profRes?['mobile'] ?? session.user.phone ?? '',
+                email: session.user.email,
+                role: profRes?['role_key'] ?? 'admin',
+                isMainAdmin: true,
+              );
+              _populateAvailableUsers();
+              notifyListeners();
+            }
+          } catch (e) {
+            debugPrint('Background profile sync note: $e');
+          }
+        }();
+        return;
       }
     } catch (e) {
       debugPrint('AuthProvider session init notice: $e');

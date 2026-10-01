@@ -462,6 +462,10 @@ class OfflineDbHelper {
       'mandal_members': [
         'member_code TEXT',
         'mobile TEXT',
+        'phone TEXT',
+        'designation TEXT',
+        'address TEXT',
+        'blood_group TEXT',
         'status TEXT DEFAULT "Active"',
         'photo_url TEXT',
         'joining_date TEXT',

@@ -52,6 +52,7 @@ dependencies:
   path: ^1.9.1
   connectivity_plus: ^6.1.4
   image_picker: ^1.1.2
+  pdf_text_shaper: ^1.1.0
 
 dev_dependencies:
   flutter_test:

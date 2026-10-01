@@ -24,57 +24,114 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final summary = repository.getSummary();
     final isDesktop = MediaQuery.of(context).size.width >= 900;
 
+    final isMobile = MediaQuery.of(context).size.width < 750;
+
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsets.all(isDesktop ? 20 : 12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Sub-Header Title matching Screen 1
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                child: Text(
+          // Sub-Header Title & Action Buttons
+          if (isMobile)
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
                   repository.mandalProfile.name.isNotEmpty
                       ? repository.mandalProfile.name
-                      : 'Navratri Utsav Mandal',
+                      : AppStrings.appName,
                   style: const TextStyle(
-                    fontSize: 20,
+                    fontSize: 18,
                     fontWeight: FontWeight.bold,
                     color: AppColors.primaryMaroon,
                   ),
+                  maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
-              ),
-              const SizedBox(width: 8),
-              Row(
-                children: [
-                  ElevatedButton.icon(
-                    onPressed: () => widget.onNavigate(2), // Navigate to Donations
-                    icon: const Icon(Icons.add, size: 16),
-                    label: const Text('Add Donation'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.successGreen,
-                      foregroundColor: Colors.white,
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: () => widget.onNavigate(2), // Navigate to Donations
+                        icon: const Icon(Icons.add, size: 15),
+                        label: Text(
+                          AppStrings.tr('देणगी जमा', 'Add Donation'),
+                          style: const TextStyle(fontSize: 12),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.successGreen,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+                        ),
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  ElevatedButton.icon(
-                    onPressed: () => widget.onNavigate(3), // Navigate to Expenses
-                    icon: const Icon(Icons.receipt, size: 16),
-                    label: const Text('Add Expense'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primaryMaroon,
-                      foregroundColor: Colors.white,
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: () => widget.onNavigate(3), // Navigate to Expenses
+                        icon: const Icon(Icons.receipt, size: 15),
+                        label: Text(
+                          AppStrings.tr('खर्च नोंद', 'Add Expense'),
+                          style: const TextStyle(fontSize: 12),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primaryMaroon,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+                        ),
+                      ),
                     ),
+                  ],
+                ),
+              ],
+            )
+          else
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Text(
+                    repository.mandalProfile.name.isNotEmpty
+                        ? repository.mandalProfile.name
+                        : AppStrings.appName,
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.primaryMaroon,
+                    ),
+                    overflow: TextOverflow.ellipsis,
                   ),
-                ],
-              ),
-            ],
-          ),
-          const SizedBox(height: 18),
+                ),
+                const SizedBox(width: 8),
+                Row(
+                  children: [
+                    ElevatedButton.icon(
+                      onPressed: () => widget.onNavigate(2),
+                      icon: const Icon(Icons.add, size: 16),
+                      label: Text(AppStrings.tr('देणगी जमा', 'Add Donation')),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.successGreen,
+                        foregroundColor: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    ElevatedButton.icon(
+                      onPressed: () => widget.onNavigate(3),
+                      icon: const Icon(Icons.receipt, size: 16),
+                      label: Text(AppStrings.tr('खर्च नोंद', 'Add Expense')),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primaryMaroon,
+                        foregroundColor: Colors.white,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          const SizedBox(height: 16),
 
-          // 6 Top Summary KPI Cards matching Screen 1
+          // 6 Top Summary KPI Cards (Responsive Aspect Ratio prevents any bleeding)
           LayoutBuilder(
             builder: (context, constraints) {
               final crossAxisCount = constraints.maxWidth > 1100
@@ -82,13 +139,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   : constraints.maxWidth > 750
                       ? 3
                       : 2;
+              final childAspectRatio = constraints.maxWidth > 1100
+                  ? 1.7
+                  : constraints.maxWidth > 750
+                      ? 1.45
+                      : 1.22;
+
               return GridView.count(
                 crossAxisCount: crossAxisCount,
-                crossAxisSpacing: 12,
-                mainAxisSpacing: 12,
+                crossAxisSpacing: 10,
+                mainAxisSpacing: 10,
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
-                childAspectRatio: 1.7,
+                childAspectRatio: childAspectRatio,
                 children: [
                   SummaryCard(
                     title: AppStrings.totalDonations,

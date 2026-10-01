@@ -152,82 +152,91 @@ class _MainAppControllerState extends State<MainAppController> {
 
   @override
   Widget build(BuildContext context) {
-    final auth = Provider.of<AuthProvider>(context);
+    return ValueListenableBuilder<bool>(
+      valueListenable: AppStrings.languageNotifier,
+      builder: (context, isMarathi, _) {
+        final auth = Provider.of<AuthProvider>(context);
 
-    // Initial loading indicator while session initializes
-    if (auth.isInitializing) {
-      return const Scaffold(
-        body: Center(
-          child: CircularProgressIndicator(color: AppColors.primaryMaroon),
-        ),
-      );
-    }
-
-    // Step 1: Bachatgat Login Screen
-    if (!auth.isAuthenticated) {
-      return const LoginScreen();
-    }
-
-    // Step 2: Bachatgat Sub-Login Screen for Admin users
-    if (auth.isAdmin && !auth.isSubLoginUnlocked) {
-      return const SubLoginScreen();
-    }
-
-    // Step 3: Main Mandal Application (Windows Desktop vs Android Mobile/Tablet)
-    final isDesktop = ResponsiveHelper.isDesktop(context);
-    final repository = MandalRepository();
-
-    if (isDesktop) {
-      // Windows Desktop Layout: Fixed Sidebar + Main Content Area
-      return Scaffold(
-        resizeToAvoidBottomInset: true,
-        body: Row(
-          children: [
-            AppSidebar(
-              selectedIndex: selectedModuleIndex,
-              onDestinationSelected: (idx) => setState(() => selectedModuleIndex = idx),
+        // Initial loading indicator while session initializes
+        if (auth.isInitializing) {
+          return const Scaffold(
+            body: Center(
+              child: CircularProgressIndicator(color: AppColors.primaryMaroon),
             ),
-            Expanded(
-              child: Column(
-                children: [
-                  AppHeader(
-                    title: repository.mandalProfile.name,
+          );
+        }
+
+        // Step 1: Bachatgat Login Screen
+        if (!auth.isAuthenticated) {
+          return const LoginScreen();
+        }
+
+        // Step 2: Bachatgat Sub-Login Screen for Admin users
+        if (auth.isAdmin && !auth.isSubLoginUnlocked) {
+          return const SubLoginScreen();
+        }
+
+        // Step 3: Main Mandal Application (Windows Desktop vs Android Mobile/Tablet)
+        final isDesktop = ResponsiveHelper.isDesktop(context);
+        final repository = MandalRepository();
+
+        if (isDesktop) {
+          // Windows Desktop Layout: Fixed Sidebar + Main Content Area
+          return Scaffold(
+            resizeToAvoidBottomInset: true,
+            body: Row(
+              children: [
+                AppSidebar(
+                  selectedIndex: selectedModuleIndex,
+                  onDestinationSelected: (idx) => setState(() => selectedModuleIndex = idx),
+                ),
+                Expanded(
+                  child: Column(
+                    children: [
+                      AppHeader(
+                        title: repository.mandalProfile.name.isNotEmpty
+                            ? repository.mandalProfile.name
+                            : AppStrings.appName,
+                      ),
+                      Expanded(
+                        child: _buildCurrentScreen(),
+                      ),
+                    ],
                   ),
-                  Expanded(
-                    child: _buildCurrentScreen(),
-                  ),
-                ],
+                ),
+              ],
+            ),
+          );
+        } else {
+          // Android Mobile & Tablet Layout: Responsive Drawer Navigation
+          return Scaffold(
+            key: _scaffoldKey,
+            resizeToAvoidBottomInset: true,
+            appBar: AppHeader(
+              title: repository.mandalProfile.name.isNotEmpty
+                  ? repository.mandalProfile.name
+                  : AppStrings.appName,
+              onMenuToggle: () => _scaffoldKey.currentState?.openDrawer(),
+            ),
+            drawer: Drawer(
+              child: AppSidebar(
+                selectedIndex: selectedModuleIndex,
+                onDestinationSelected: (idx) {
+                  Navigator.pop(context); // Close drawer
+                  setState(() => selectedModuleIndex = idx);
+                },
               ),
             ),
-          ],
-        ),
-      );
-    } else {
-      // Android Mobile & Tablet Layout: Responsive Drawer Navigation
-      return Scaffold(
-        key: _scaffoldKey,
-        resizeToAvoidBottomInset: true,
-        appBar: AppHeader(
-          title: repository.mandalProfile.name,
-          onMenuToggle: () => _scaffoldKey.currentState?.openDrawer(),
-        ),
-        drawer: Drawer(
-          child: AppSidebar(
-            selectedIndex: selectedModuleIndex,
-            onDestinationSelected: (idx) {
-              Navigator.pop(context); // Close drawer
-              setState(() => selectedModuleIndex = idx);
-            },
-          ),
-        ),
-        body: SafeArea(
-          child: DesktopWrapper(
-            key: ValueKey(selectedModuleIndex),
-            minWidth: 1050,
-            child: _buildCurrentScreen(),
-          ),
-        ),
-      );
-    }
+            body: SafeArea(
+              child: DesktopWrapper(
+                key: ValueKey('${selectedModuleIndex}_$isMarathi'),
+                minWidth: 1050,
+                child: _buildCurrentScreen(),
+              ),
+            ),
+          );
+        }
+      },
+    );
   }
 }
