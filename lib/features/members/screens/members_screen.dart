@@ -3,6 +3,7 @@ import '../../../core/localization/app_strings.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../models/all_models.dart';
 import '../../../repositories/mandal_repository.dart';
+import '../../../services/offline_db_helper.dart';
 import '../../../widgets/status_badge.dart';
 
 class MembersScreen extends StatefulWidget {
@@ -81,7 +82,7 @@ class _MembersScreenState extends State<MembersScreen> {
               final messenger = ScaffoldMessenger.of(context);
               final nav = Navigator.of(ctx);
               final newMember = MemberModel(
-                id: DateTime.now().millisecondsSinceEpoch.toString(),
+                id: OfflineDbHelper.generateId(),
                 memberCode: 'MEM-00${repository.members.length + 1}',
                 fullName: nameCtrl.text.trim(),
                 role: selectedRole,

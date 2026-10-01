@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
+import '../providers/display_mode_provider.dart';
 
 /// DesktopWrapper provides the exact adaptive scaling, auto-fit, and pinch-to-zoom
 /// mechanism used in Bachatgat Management and Dairy Management applications.
@@ -103,6 +105,17 @@ class _DesktopWrapperState extends State<DesktopWrapper> {
 
   @override
   Widget build(BuildContext context) {
+    // In Mobile Mode (Dairy Management style): bypass the 1050px Desktop canvas & zoom wrapper!
+    // The child widgets adapt natively and responsively to the mobile viewport.
+    DisplayModeProvider? displayMode;
+    try {
+      displayMode = Provider.of<DisplayModeProvider>(context);
+    } catch (_) {}
+
+    if (displayMode != null && displayMode.isMobile) {
+      return widget.child;
+    }
+
     final mediaQuery = MediaQuery.of(context);
     final screenWidth = mediaQuery.size.width;
 

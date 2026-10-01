@@ -38,6 +38,7 @@ class MandalRepository {
   List<DocumentModel> documents = [];
   List<SponsorModel> sponsors = [];
   List<FoodPrasadModel> foodMenu = [];
+  List<GalleryMediaModel> galleryMedia = [];
   List<SecurityContactModel> securityContacts = [
     SecurityContactModel(id: '1', title: 'Police Control Room', category: 'Police', contactNumber: '100'),
     SecurityContactModel(id: '2', title: 'Fire Brigade', category: 'Fire Brigade', contactNumber: '101'),
@@ -235,6 +236,19 @@ class MandalRepository {
         vendors = venRows.map((e) => VendorModel.fromJson(e)).toList();
       }
 
+      // 9. Gallery Media
+      try {
+        final galRows = await db.query(
+          'gallery',
+          where: whereClause,
+          whereArgs: whereArgs,
+          orderBy: 'uploaded_at DESC, id DESC',
+        );
+        if (galRows.isNotEmpty) {
+          galleryMedia = galRows.map((e) => GalleryMediaModel.fromJson(e)).toList();
+        }
+      } catch (_) {}
+
       debugPrint('Loaded local SQLite database cache successfully.');
     } catch (e) {
       debugPrint('Error loading from local SQLite database: $e');
@@ -317,6 +331,18 @@ class MandalRepository {
       // 14. Fetch Event Participants
       final partRes = await client.from('event_participants').select().eq('mandal_id', activeId);
       participants = (partRes as List).map((e) => GarbaParticipantModel.fromJson(e)).toList();
+
+      // 15. Fetch Gallery Media
+      try {
+        final galRes = await client.from('gallery').select().eq('mandal_id', activeId).order('uploaded_at', ascending: false);
+        if (galRes.isNotEmpty) {
+          galleryMedia = galRes.map((e) => GalleryMediaModel.fromJson(e)).toList();
+          final db = await OfflineDbHelper.instance.database;
+          for (final g in galleryMedia) {
+            await db.insert('gallery', g.toJson(), conflictAlgorithm: ConflictAlgorithm.replace);
+          }
+        }
+      } catch (_) {}
 
       debugPrint('Supabase 2-way sync successfully completed for mandal: $activeId');
     } catch (e) {
@@ -585,4 +611,30 @@ class MandalRepository {
       }
     }
   }
+
+  Future<void> addGalleryMedia(GalleryMediaModel media) async {
+    galleryMedia.insert(0, media);
+    final rowId = media.id.length == 36 ? media.id : OfflineDbHelper.generateId();
+    final payload = media.toJson();
+    payload['id'] = rowId;
+    payload['mandal_id'] = mandalProfile.id;
+
+    await _persistAndSync(
+      table: 'gallery',
+      rowId: rowId,
+      action: 'UPSERT',
+      payload: payload,
+    );
+  }
+
+  Future<void> deleteGalleryMedia(String id) async {
+    galleryMedia.removeWhere((g) => g.id == id);
+    await _persistAndSync(
+      table: 'gallery',
+      rowId: id,
+      action: 'DELETE',
+      payload: {'id': id},
+    );
+  }
 }
+

@@ -74,6 +74,7 @@ class OfflineDbHelper {
           // Flush WAL transactions and set journal mode to DELETE so single .db file holds 100% data
           await db.rawQuery('PRAGMA wal_checkpoint(TRUNCATE);');
           await db.rawQuery('PRAGMA journal_mode=DELETE;');
+          await _runMigrations(db);
         } catch (_) {}
       },
     );
@@ -196,11 +197,17 @@ class OfflineDbHelper {
       CREATE TABLE IF NOT EXISTS mandal_members (
         id TEXT PRIMARY KEY,
         mandal_id TEXT NOT NULL,
+        member_code TEXT,
         full_name TEXT NOT NULL,
         role TEXT,
+        mobile TEXT,
         phone TEXT,
         designation TEXT,
         address TEXT,
+        status TEXT DEFAULT 'Active',
+        photo_url TEXT,
+        joining_date TEXT,
+        emergency_contact TEXT,
         blood_group TEXT,
         created_at TEXT
       )
@@ -211,17 +218,22 @@ class OfflineDbHelper {
       CREATE TABLE IF NOT EXISTS donations (
         id TEXT PRIMARY KEY,
         mandal_id TEXT NOT NULL,
+        receipt_number TEXT,
+        donation_date TEXT,
         donor_name TEXT NOT NULL,
+        mobile TEXT,
         donor_phone TEXT,
+        address TEXT,
         donor_address TEXT,
         amount REAL NOT NULL,
         category TEXT,
         payment_mode TEXT,
-        donation_date TEXT,
-        receipt_number TEXT,
+        purpose TEXT,
+        collector_name TEXT,
         collected_by TEXT,
         status TEXT,
         notes TEXT,
+        attachment_url TEXT,
         created_at TEXT
       )
     ''');
@@ -231,15 +243,19 @@ class OfflineDbHelper {
       CREATE TABLE IF NOT EXISTS expenses (
         id TEXT PRIMARY KEY,
         mandal_id TEXT NOT NULL,
-        expense_title TEXT NOT NULL,
-        category TEXT,
-        amount REAL NOT NULL,
-        vendor_name TEXT,
-        paid_by TEXT,
-        payment_mode TEXT,
-        expense_date TEXT,
-        bill_number TEXT,
         expense_number TEXT,
+        expense_date TEXT,
+        category_name TEXT,
+        category TEXT,
+        vendor_name TEXT,
+        description TEXT,
+        expense_title TEXT,
+        amount REAL NOT NULL,
+        payment_mode TEXT,
+        paid_by TEXT,
+        bill_url TEXT,
+        bill_number TEXT,
+        status TEXT,
         notes TEXT,
         created_at TEXT
       )
@@ -251,11 +267,14 @@ class OfflineDbHelper {
         id TEXT PRIMARY KEY,
         mandal_id TEXT NOT NULL,
         bank_name TEXT NOT NULL,
-        account_number TEXT NOT NULL,
-        ifsc_code TEXT,
         branch_name TEXT,
-        account_type TEXT,
+        account_holder TEXT,
+        account_number TEXT NOT NULL,
+        ifsc TEXT,
+        ifsc_code TEXT,
+        current_balance REAL,
         balance REAL,
+        account_type TEXT,
         created_at TEXT
       )
     ''');
@@ -421,6 +440,96 @@ class OfflineDbHelper {
         value TEXT
       )
     ''');
+
+    // 18. Gallery & Festival Media
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS gallery (
+        id TEXT PRIMARY KEY,
+        mandal_id TEXT NOT NULL,
+        media_type TEXT DEFAULT 'image',
+        category TEXT DEFAULT 'festival',
+        title TEXT NOT NULL,
+        file_url TEXT NOT NULL,
+        thumbnail_url TEXT,
+        event_id TEXT,
+        uploaded_at TEXT
+      )
+    ''');
+  }
+
+  static Future<void> _runMigrations(Database db) async {
+    final migrations = {
+      'mandal_members': [
+        'member_code TEXT',
+        'mobile TEXT',
+        'status TEXT DEFAULT "Active"',
+        'photo_url TEXT',
+        'joining_date TEXT',
+        'emergency_contact TEXT',
+      ],
+      'donations': [
+        'mobile TEXT',
+        'address TEXT',
+        'purpose TEXT',
+        'collector_name TEXT',
+        'attachment_url TEXT',
+      ],
+      'expenses': [
+        'category_name TEXT',
+        'expense_number TEXT',
+        'bill_url TEXT',
+      ],
+      'bank_accounts': [
+        'ifsc TEXT',
+        'current_balance REAL',
+      ],
+      'events': [
+        'event_name TEXT',
+        'event_date TEXT',
+        'start_time TEXT',
+        'end_time TEXT',
+        'venue TEXT',
+      ],
+    };
+
+    for (final entry in migrations.entries) {
+      final table = entry.key;
+      try {
+        final info = await db.rawQuery('PRAGMA table_info($table);');
+        final existingCols = info.map((c) => c['name']?.toString().toLowerCase()).toSet();
+        for (final colDef in entry.value) {
+          final colName = colDef.split(' ').first.toLowerCase();
+          if (!existingCols.contains(colName)) {
+            await db.execute('ALTER TABLE $table ADD COLUMN $colDef;');
+            debugPrint('Migrated column $colName into SQLite table $table');
+          }
+        }
+      } catch (e) {
+        debugPrint('Migration notice for $table: $e');
+      }
+    }
+
+    // Ensure gallery table exists
+    try {
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS gallery (
+          id TEXT PRIMARY KEY,
+          mandal_id TEXT NOT NULL,
+          media_type TEXT DEFAULT 'image',
+          category TEXT DEFAULT 'festival',
+          title TEXT NOT NULL,
+          file_url TEXT NOT NULL,
+          thumbnail_url TEXT,
+          event_id TEXT,
+          uploaded_at TEXT
+        )
+      ''');
+    } catch (_) {}
+
+    // Flush stuck sync queue records that failed repeatedly
+    try {
+      await db.rawUpdate("UPDATE sync_queue SET status = 'failed' WHERE retry_count >= 5;");
+    } catch (_) {}
   }
 
   Future<void> createAllTables(Database db) async {

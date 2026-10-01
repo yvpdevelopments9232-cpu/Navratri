@@ -130,6 +130,8 @@ class MemberModel {
     );
   }
 
+  String get designation => role;
+
   MemberModel copyWith({
     String? id,
     String? memberCode,
@@ -392,6 +394,9 @@ class BankAccountModel {
     'ifsc': ifsc,
     'current_balance': balance,
   };
+
+  String get ifscCode => ifsc;
+  double get currentBalance => balance;
 }
 
 class EventModel {
@@ -438,6 +443,10 @@ class EventModel {
     'status': status,
     if (description != null) 'description': description,
   };
+
+  String get title => eventName;
+  String get location => venue;
+  String? get chiefGuest => description;
 }
 
 class GarbaParticipantModel {
@@ -484,6 +493,11 @@ class GarbaParticipantModel {
     'amount': amount,
     'status': status,
   };
+
+  String get passNumber => regNumber;
+  String get participantName => name;
+  String get competitionCategory => gender == 'M' ? 'पुरुष (Men)' : 'महिला (Women)';
+  double get passAmount => amount;
 }
 
 class VolunteerModel {
@@ -526,6 +540,10 @@ class VolunteerModel {
     'status': status,
     if (photoUrl != null) 'photo_url': photoUrl,
   };
+
+  String get volunteerCode => code;
+  String get fullName => name;
+  String get dutyArea => department;
 }
 
 class VendorModel {
@@ -696,6 +714,9 @@ class SponsorModel {
     'paid_amount': paidAmount,
     'payment_status': status,
   };
+
+  String get category => package;
+  String get contact => status;
 }
 
 class FoodPrasadModel {
@@ -931,4 +952,54 @@ class DashboardSummary {
       netChange: 47000.0,
     );
   }
+}
+
+class GalleryMediaModel {
+  final String id;
+  final String mandalId;
+  final String mediaType;
+  final String category;
+  final String title;
+  final String fileUrl;
+  final String? thumbnailUrl;
+  final String? eventId;
+  final String? uploadedAt;
+
+  GalleryMediaModel({
+    required this.id,
+    required this.mandalId,
+    this.mediaType = 'image',
+    this.category = 'festival',
+    required this.title,
+    required this.fileUrl,
+    this.thumbnailUrl,
+    this.eventId,
+    this.uploadedAt,
+  });
+
+  factory GalleryMediaModel.fromJson(Map<String, dynamic> json) {
+    return GalleryMediaModel(
+      id: json['id']?.toString() ?? '',
+      mandalId: json['mandal_id']?.toString() ?? '',
+      mediaType: json['media_type']?.toString() ?? 'image',
+      category: json['category']?.toString() ?? 'festival',
+      title: json['title']?.toString() ?? 'Celebration Photo',
+      fileUrl: json['file_url']?.toString() ?? '',
+      thumbnailUrl: json['thumbnail_url']?.toString(),
+      eventId: json['event_id']?.toString(),
+      uploadedAt: json['uploaded_at']?.toString() ?? json['created_at']?.toString(),
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'mandal_id': mandalId,
+    'media_type': mediaType,
+    'category': category,
+    'title': title,
+    'file_url': fileUrl,
+    if (thumbnailUrl != null) 'thumbnail_url': thumbnailUrl,
+    if (eventId != null) 'event_id': eventId,
+    'uploaded_at': uploadedAt ?? DateTime.now().toIso8601String(),
+  };
 }

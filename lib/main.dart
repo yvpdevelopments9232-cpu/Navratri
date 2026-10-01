@@ -29,6 +29,7 @@ import 'features/visarjan/screens/visarjan_screen.dart';
 import 'features/volunteers/screens/volunteers_screen.dart';
 import 'features/vendors/screens/vendors_screen.dart';
 import 'providers/auth_provider.dart';
+import 'providers/display_mode_provider.dart';
 import 'repositories/mandal_repository.dart';
 import 'services/offline_db_helper.dart';
 import 'services/sync_service.dart';
@@ -58,6 +59,7 @@ void main() async {
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => AuthProvider()),
+        ChangeNotifierProvider(create: (_) => DisplayModeProvider()),
       ],
       child: const NavratriMandalApp(),
     ),
