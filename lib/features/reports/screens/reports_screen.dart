@@ -743,31 +743,31 @@ class _ReportsScreenState extends State<ReportsScreen> {
           const SizedBox(height: 12),
           TextField(
             controller: _fromController,
-            decoration: const InputDecoration(
-              labelText: 'From Date',
+            decoration: InputDecoration(
+              labelText: AppStrings.tr('तारखेपासून', 'From Date'),
               hintText: '01-09-2026',
-              prefixIcon: Icon(Icons.calendar_today, size: 16),
-              contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              prefixIcon: const Icon(Icons.calendar_today, size: 16),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
             ),
           ),
           const SizedBox(height: 10),
           TextField(
             controller: _toController,
-            decoration: const InputDecoration(
-              labelText: 'To Date',
+            decoration: InputDecoration(
+              labelText: AppStrings.tr('तारखेपर्यंत', 'To Date'),
               hintText: '31-10-2026',
-              prefixIcon: Icon(Icons.calendar_today, size: 16),
-              contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              prefixIcon: const Icon(Icons.calendar_today, size: 16),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
             ),
           ),
           const SizedBox(height: 10),
           TextField(
             controller: _categoryController,
-            decoration: const InputDecoration(
-              labelText: 'Category',
-              hintText: 'All Categories',
-              prefixIcon: Icon(Icons.filter_list, size: 16),
-              contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+            decoration: InputDecoration(
+              labelText: AppStrings.tr('प्रवर्ग', 'Category'),
+              hintText: AppStrings.tr('सर्व प्रवर्ग', 'All Categories'),
+              prefixIcon: const Icon(Icons.filter_list, size: 16),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
             ),
           ),
           const SizedBox(height: 16),
@@ -779,7 +779,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                 child: ElevatedButton.icon(
                   onPressed: () => _showReportDataPreview(selectedReport),
                   icon: const Icon(Icons.visibility, size: 16),
-                  label: const Text('View'),
+                  label: Text(AppStrings.tr('पहा', 'View')),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primaryMaroon,
                     foregroundColor: Colors.white,
@@ -809,7 +809,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                 child: OutlinedButton.icon(
                   onPressed: () => _generatePdf(selectedReport),
                   icon: const Icon(Icons.print, size: 16),
-                  label: const Text('Print'),
+                  label: Text(AppStrings.tr('प्रिंट', 'Print')),
                   style: OutlinedButton.styleFrom(
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
                   ),
@@ -821,7 +821,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                   onPressed: () {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                        content: Text('$selectedReport exported to Excel successfully'),
+                        content: Text(AppStrings.tr('$selectedReport एक्सेलमध्ये यशस्वीरित्या सेव्ह केले', '$selectedReport exported to Excel successfully')),
                         backgroundColor: Colors.green[700],
                       ),
                     );

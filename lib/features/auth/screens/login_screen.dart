@@ -25,10 +25,8 @@ class _LoginScreenState extends State<LoginScreen> {
   String? _errorMessage;
 
   // Login Controllers
-  final TextEditingController _loginEmailController =
-      TextEditingController(text: 'admin@mandal.org');
-  final TextEditingController _loginPasswordController =
-      TextEditingController(text: 'admin123');
+  final TextEditingController _loginEmailController = TextEditingController();
+  final TextEditingController _loginPasswordController = TextEditingController();
 
   // Sign Up Controllers
   final TextEditingController _signupEmailController = TextEditingController();

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../../../core/localization/app_strings.dart';
+import '../../../core/services/pdf_service.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/currency_formatter.dart';
 import '../../../models/all_models.dart';
@@ -262,9 +263,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                'Donation vs Expense (Daily)',
-                style: TextStyle(
+              Text(
+                AppStrings.tr('दैनिक देणगी वि. खर्च', 'Donation vs Expense (Daily)'),
+                style: const TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.bold,
                   color: AppColors.textPrimary,
@@ -272,9 +273,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ),
               Row(
                 children: [
-                  _chartLegend('Donation', AppColors.successGreen),
+                  _chartLegend(AppStrings.tr('देणगी', 'Donation'), AppColors.successGreen),
                   const SizedBox(width: 12),
-                  _chartLegend('Expense', AppColors.expenseRed),
+                  _chartLegend(AppStrings.tr('खर्च', 'Expense'), AppColors.expenseRed),
                 ],
               ),
             ],
@@ -362,7 +363,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text("Today's Collection", style: TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+                    Text(
+                      AppStrings.tr('आजची जमा', "Today's Collection"),
+                      style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                    ),
                     const SizedBox(height: 4),
                     Text(
                       CurrencyFormatter.format(summary.todayCollection),
@@ -384,7 +388,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text("Today's Expenses", style: TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+                    Text(
+                      AppStrings.tr('आजचा खर्च', "Today's Expenses"),
+                      style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                    ),
                     const SizedBox(height: 4),
                     Text(
                       CurrencyFormatter.format(summary.todayExpenses),
@@ -412,24 +419,24 @@ class _DashboardScreenState extends State<DashboardScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
-                    'Upcoming Events',
-                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                  Text(
+                    AppStrings.tr('आगामी कार्यक्रम', 'Upcoming Events'),
+                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
                   ),
                   TextButton(
                     onPressed: () => widget.onNavigate(5), // Navigate to Events
-                    child: const Text('View All', style: TextStyle(fontSize: 11)),
+                    child: Text(AppStrings.tr('सर्व पहा', 'View All'), style: const TextStyle(fontSize: 11)),
                   ),
                 ],
               ),
               const SizedBox(height: 8),
               if (repository.events.isEmpty)
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 20),
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 20),
                   child: Center(
                     child: Text(
-                      'कोणताही आगामी कार्यक्रम नाही (No upcoming events)',
-                      style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                      AppStrings.tr('कोणताही आगामी कार्यक्रम नाही', 'No upcoming events'),
+                      style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
                     ),
                   ),
                 )
@@ -494,9 +501,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                'Recent Transactions',
-                style: TextStyle(
+              Text(
+                AppStrings.tr('अलिकडील व्यवहार', 'Recent Transactions'),
+                style: const TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.bold,
                   color: AppColors.textPrimary,
@@ -504,7 +511,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ),
               TextButton(
                 onPressed: () => widget.onNavigate(2), // Navigate to Donations
-                child: const Text('View All', style: TextStyle(fontSize: 12)),
+                child: Text(AppStrings.tr('सर्व पहा', 'View All'), style: const TextStyle(fontSize: 12)),
               ),
             ],
           ),
@@ -517,14 +524,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   children: [
                     const Icon(Icons.inbox_outlined, size: 44, color: AppColors.textSecondary),
                     const SizedBox(height: 8),
-                    const Text(
-                      'कोणतीही देणगी नोंद उपलब्ध नाही (No donation records found)',
-                      style: TextStyle(fontSize: 14, color: AppColors.textSecondary, fontWeight: FontWeight.w500),
+                    Text(
+                      AppStrings.tr('कोणतीही देणगी नोंद उपलब्ध नाही', 'No donation records found'),
+                      style: const TextStyle(fontSize: 14, color: AppColors.textSecondary, fontWeight: FontWeight.w500),
                     ),
                     const SizedBox(height: 4),
-                    const Text(
-                      'नवीन देणगी जोडण्यासाठी वरील + Add Donation बटनावर क्लिक करा',
-                      style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                    Text(
+                      AppStrings.tr(
+                        'नवीन देणगी जोडण्यासाठी वरील + देणगी जमा बटनावर क्लिक करा',
+                        'Click above + Add Donation button to record donations',
+                      ),
+                      style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
                     ),
                   ],
                 ),
@@ -535,13 +545,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
               scrollDirection: Axis.horizontal,
               child: DataTable(
                 headingRowColor: WidgetStateProperty.all(const Color(0xFFF8FAFC)),
-                columns: const [
-                  DataColumn(label: Text('Receipt No', style: TextStyle(fontWeight: FontWeight.bold))),
-                  DataColumn(label: Text('Donor Name', style: TextStyle(fontWeight: FontWeight.bold))),
-                  DataColumn(label: Text('Amount', style: TextStyle(fontWeight: FontWeight.bold))),
-                  DataColumn(label: Text('Date', style: TextStyle(fontWeight: FontWeight.bold))),
-                  DataColumn(label: Text('Mode', style: TextStyle(fontWeight: FontWeight.bold))),
-                  DataColumn(label: Text('Action', style: TextStyle(fontWeight: FontWeight.bold))),
+                columns: [
+                  DataColumn(label: Text(AppStrings.tr('पावती क्र.', 'Receipt No'), style: const TextStyle(fontWeight: FontWeight.bold))),
+                  DataColumn(label: Text(AppStrings.tr('देणगीदार', 'Donor Name'), style: const TextStyle(fontWeight: FontWeight.bold))),
+                  DataColumn(label: Text(AppStrings.tr('रक्कम', 'Amount'), style: const TextStyle(fontWeight: FontWeight.bold))),
+                  DataColumn(label: Text(AppStrings.tr('तारीख', 'Date'), style: const TextStyle(fontWeight: FontWeight.bold))),
+                  DataColumn(label: Text(AppStrings.tr('पद्धत', 'Mode'), style: const TextStyle(fontWeight: FontWeight.bold))),
+                  DataColumn(label: Text(AppStrings.tr('कृती', 'Action'), style: const TextStyle(fontWeight: FontWeight.bold))),
                 ],
                 rows: repository.donations.take(4).map((d) {
                   return DataRow(
@@ -565,12 +575,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         Row(
                           children: [
                             IconButton(
-                              icon: const Icon(Icons.visibility, size: 18, color: AppColors.infoBlue),
-                              onPressed: () {},
-                            ),
-                            IconButton(
                               icon: const Icon(Icons.print, size: 18, color: AppColors.primaryMaroon),
-                              onPressed: () {},
+                              onPressed: () => PdfService.printDonationReceipt(
+                                mandal: repository.mandalProfile,
+                                donation: d,
+                              ),
                             ),
                           ],
                         ),

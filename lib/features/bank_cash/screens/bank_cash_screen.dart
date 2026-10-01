@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../core/localization/app_strings.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/currency_formatter.dart';
 import '../../../models/all_models.dart';
@@ -38,11 +39,15 @@ class _BankCashScreenState extends State<BankCashScreen> with SingleTickerProvid
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Row(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
           children: [
-            Icon(Icons.account_balance, color: AppColors.primaryMaroon),
-            SizedBox(width: 8),
-            Text('Add Bank Account', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+            const Icon(Icons.account_balance, color: AppColors.primaryMaroon),
+            const SizedBox(width: 8),
+            Text(
+              AppStrings.tr('नवीन बँक खाते जोडा', 'Add Bank Account'),
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 17),
+            ),
           ],
         ),
         content: SizedBox(
@@ -51,24 +56,69 @@ class _BankCashScreenState extends State<BankCashScreen> with SingleTickerProvid
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                TextField(controller: bankCtrl, decoration: const InputDecoration(labelText: 'Bank Name (e.g. SBI)')),
+                TextField(
+                  controller: bankCtrl,
+                  decoration: InputDecoration(
+                    labelText: AppStrings.tr('बँकेचे नाव (उदा. SBI, HDFC)', 'Bank Name (e.g. SBI)'),
+                    prefixIcon: const Icon(Icons.account_balance),
+                  ),
+                ),
                 const SizedBox(height: 12),
-                TextField(controller: branchCtrl, decoration: const InputDecoration(labelText: 'Branch Name')),
+                TextField(
+                  controller: branchCtrl,
+                  decoration: InputDecoration(
+                    labelText: AppStrings.tr('शाखेचे नाव (Branch)', 'Branch Name'),
+                    prefixIcon: const Icon(Icons.location_city),
+                  ),
+                ),
                 const SizedBox(height: 12),
-                TextField(controller: holderCtrl, decoration: const InputDecoration(labelText: 'Account Holder Name')),
+                TextField(
+                  controller: holderCtrl,
+                  decoration: InputDecoration(
+                    labelText: AppStrings.tr('खातेदाराचे नाव (Mandal Name)', 'Account Holder Name'),
+                    prefixIcon: const Icon(Icons.person),
+                  ),
+                ),
                 const SizedBox(height: 12),
-                TextField(controller: accNumCtrl, decoration: const InputDecoration(labelText: 'Account Number'), keyboardType: TextInputType.number),
+                TextField(
+                  controller: accNumCtrl,
+                  decoration: InputDecoration(
+                    labelText: AppStrings.tr('खाते क्रमांक (Account Number)', 'Account Number'),
+                    prefixIcon: const Icon(Icons.tag),
+                  ),
+                  keyboardType: TextInputType.number,
+                ),
                 const SizedBox(height: 12),
-                TextField(controller: ifscCtrl, decoration: const InputDecoration(labelText: 'IFSC Code')),
+                TextField(
+                  controller: ifscCtrl,
+                  decoration: InputDecoration(
+                    labelText: AppStrings.tr('IFSC कोड', 'IFSC Code'),
+                    prefixIcon: const Icon(Icons.numbers),
+                  ),
+                ),
                 const SizedBox(height: 12),
-                TextField(controller: balCtrl, decoration: const InputDecoration(labelText: 'Opening Balance (₹)'), keyboardType: TextInputType.number),
+                TextField(
+                  controller: balCtrl,
+                  decoration: InputDecoration(
+                    labelText: AppStrings.tr('सुरुवातीची शिल्लक (₹)', 'Opening Balance (₹)'),
+                    prefixIcon: const Icon(Icons.currency_rupee),
+                  ),
+                  keyboardType: TextInputType.number,
+                ),
               ],
             ),
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(AppStrings.tr('रद्द करा', 'Cancel'), style: const TextStyle(color: AppColors.textSecondary)),
+          ),
           ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primaryMaroon,
+              foregroundColor: Colors.white,
+            ),
             onPressed: () {
               final bal = double.tryParse(balCtrl.text.trim()) ?? 0.0;
               if (bankCtrl.text.trim().isEmpty || accNumCtrl.text.trim().isEmpty) return;
@@ -86,7 +136,7 @@ class _BankCashScreenState extends State<BankCashScreen> with SingleTickerProvid
               Navigator.pop(ctx);
               setState(() {});
             },
-            child: const Text('Save Account'),
+            child: Text(AppStrings.tr('खाते जतन करा', 'Save Account')),
           ),
         ],
       ),
@@ -96,7 +146,6 @@ class _BankCashScreenState extends State<BankCashScreen> with SingleTickerProvid
   @override
   Widget build(BuildContext context) {
     final summary = repository.getSummary();
-
     final isMobile = MediaQuery.of(context).size.width < 750;
 
     return SingleChildScrollView(
@@ -117,9 +166,9 @@ class _BankCashScreenState extends State<BankCashScreen> with SingleTickerProvid
               labelColor: AppColors.primaryMaroon,
               indicatorColor: AppColors.primaryMaroon,
               unselectedLabelColor: AppColors.textSecondary,
-              tabs: const [
-                Tab(icon: Icon(Icons.account_balance), text: 'Bank Accounts'),
-                Tab(icon: Icon(Icons.payments), text: 'Cash in Hand'),
+              tabs: [
+                Tab(icon: const Icon(Icons.account_balance), text: AppStrings.tr('बँक खाती', 'Bank Accounts')),
+                Tab(icon: const Icon(Icons.payments), text: AppStrings.tr('हातची रोकड (Cash)', 'Cash in Hand')),
               ],
             ),
           ),
@@ -143,15 +192,17 @@ class _BankCashScreenState extends State<BankCashScreen> with SingleTickerProvid
                   spacing: 10,
                   runSpacing: 8,
                   children: [
-                    const Text(
-                      'Bank Accounts',
-                      style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                    Text(
+                      AppStrings.tr('बँक खाती व्यवस्थापन', 'Bank Accounts'),
+                      style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
                     ),
                     ElevatedButton.icon(
                       onPressed: _showAddBankDialog,
                       icon: const Icon(Icons.add, size: 16),
-                      label: const Text('+ Add Bank'),
+                      label: Text(AppStrings.tr('+ बँक जोडा', '+ Add Bank')),
                       style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primaryMaroon,
+                        foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                       ),
                     ),
@@ -163,13 +214,13 @@ class _BankCashScreenState extends State<BankCashScreen> with SingleTickerProvid
                   scrollDirection: Axis.horizontal,
                   child: DataTable(
                     headingRowColor: WidgetStateProperty.all(const Color(0xFFF8FAFC)),
-                    columns: const [
-                      DataColumn(label: Text('Bank Name', style: TextStyle(fontWeight: FontWeight.bold))),
-                      DataColumn(label: Text('Branch', style: TextStyle(fontWeight: FontWeight.bold))),
-                      DataColumn(label: Text('Account No.', style: TextStyle(fontWeight: FontWeight.bold))),
-                      DataColumn(label: Text('IFSC', style: TextStyle(fontWeight: FontWeight.bold))),
-                      DataColumn(label: Text('Balance', style: TextStyle(fontWeight: FontWeight.bold))),
-                      DataColumn(label: Text('Action', style: TextStyle(fontWeight: FontWeight.bold))),
+                    columns: [
+                      DataColumn(label: Text(AppStrings.tr('बँकेचे नाव', 'Bank Name'), style: const TextStyle(fontWeight: FontWeight.bold))),
+                      DataColumn(label: Text(AppStrings.tr('शाखा', 'Branch'), style: const TextStyle(fontWeight: FontWeight.bold))),
+                      DataColumn(label: Text(AppStrings.tr('खाते क्रमांक', 'Account No.'), style: const TextStyle(fontWeight: FontWeight.bold))),
+                      DataColumn(label: Text(AppStrings.tr('IFSC', 'IFSC'), style: const TextStyle(fontWeight: FontWeight.bold))),
+                      DataColumn(label: Text(AppStrings.tr('शिल्लक रक्कम', 'Balance'), style: const TextStyle(fontWeight: FontWeight.bold))),
+                      DataColumn(label: Text(AppStrings.tr('कृती', 'Action'), style: const TextStyle(fontWeight: FontWeight.bold))),
                     ],
                     rows: repository.bankAccounts.map((b) {
                       return DataRow(
@@ -203,9 +254,9 @@ class _BankCashScreenState extends State<BankCashScreen> with SingleTickerProvid
           const SizedBox(height: 20),
 
           // Overview Cards matching Screen 5 exactly
-          const Text(
-            'Overview',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+          Text(
+            AppStrings.tr('वित्तीय अवलोकन (Overview)', 'Financial Overview'),
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
           ),
           const SizedBox(height: 12),
           LayoutBuilder(
@@ -220,12 +271,48 @@ class _BankCashScreenState extends State<BankCashScreen> with SingleTickerProvid
                 mainAxisSpacing: 10,
                 childAspectRatio: ratio,
                 children: [
-                  _buildBalanceTile('Bank Balance', CurrencyFormatter.format(summary.bankBalance), AppColors.infoBlue, Icons.account_balance, isMobile),
-                  _buildBalanceTile('Cash Balance', CurrencyFormatter.format(summary.cashBalance), AppColors.warningOrange, Icons.payments, isMobile),
-                  _buildBalanceTile('Total Balance', CurrencyFormatter.format(summary.totalBalance), AppColors.successGreen, Icons.account_balance_wallet, isMobile),
-                  _buildBalanceTile('Deposits', CurrencyFormatter.format(summary.deposits), AppColors.successGreen, Icons.arrow_downward, isMobile),
-                  _buildBalanceTile('Withdrawals', CurrencyFormatter.format(summary.withdrawals), AppColors.expenseRed, Icons.arrow_upward, isMobile),
-                  _buildBalanceTile('Net Change', CurrencyFormatter.format(summary.netChange), const Color(0xFF0D9488), Icons.trending_up, isMobile),
+                  _buildBalanceTile(
+                    AppStrings.tr('बँक शिल्लक', 'Bank Balance'),
+                    CurrencyFormatter.format(summary.bankBalance),
+                    AppColors.infoBlue,
+                    Icons.account_balance,
+                    isMobile,
+                  ),
+                  _buildBalanceTile(
+                    AppStrings.tr('रोख शिल्लक', 'Cash Balance'),
+                    CurrencyFormatter.format(summary.cashBalance),
+                    AppColors.warningOrange,
+                    Icons.payments,
+                    isMobile,
+                  ),
+                  _buildBalanceTile(
+                    AppStrings.tr('एकूण शिल्लक', 'Total Balance'),
+                    CurrencyFormatter.format(summary.totalBalance),
+                    AppColors.successGreen,
+                    Icons.account_balance_wallet,
+                    isMobile,
+                  ),
+                  _buildBalanceTile(
+                    AppStrings.tr('जमा रक्कम', 'Deposits'),
+                    CurrencyFormatter.format(summary.deposits),
+                    AppColors.successGreen,
+                    Icons.arrow_downward,
+                    isMobile,
+                  ),
+                  _buildBalanceTile(
+                    AppStrings.tr('खर्च / काढलेली', 'Withdrawals'),
+                    CurrencyFormatter.format(summary.withdrawals),
+                    AppColors.expenseRed,
+                    Icons.arrow_upward,
+                    isMobile,
+                  ),
+                  _buildBalanceTile(
+                    AppStrings.tr('निव्वळ शिल्लक', 'Net Change'),
+                    CurrencyFormatter.format(summary.netChange),
+                    const Color(0xFF0D9488),
+                    Icons.trending_up,
+                    isMobile,
+                  ),
                 ],
               );
             },

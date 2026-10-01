@@ -130,64 +130,72 @@ class AuthProvider extends ChangeNotifier {
         _activeRole = savedRole == AppRole.member.name ? AppRole.member : AppRole.admin;
       }
 
-      final session = SupabaseConfig.client.auth.currentSession;
+      final isSavedAuth = prefs.getBool(_prefIsAuth) ?? false;
+      final savedEmail = prefs.getString(_prefAuthEmail);
       final savedMandalId = prefs.getString('active_mandal_id') ?? MandalRepository().mandalProfile.id;
+      final session = SupabaseConfig.client.auth.currentSession;
 
-      if (session != null && session.user.id.isNotEmpty) {
-        final userId = session.user.id;
+      if (isSavedAuth || (session != null && session.user.id.isNotEmpty)) {
+        final userId = session?.user.id ?? 'local_admin';
         final mandalId = savedMandalId.isNotEmpty ? savedMandalId : MandalRepository().mandalProfile.id;
 
         // Immediate offline profile setup for instantaneous startup (< 50ms)
         _currentProfile = UserProfile(
           id: userId,
           mandalId: mandalId,
-          fullName: session.user.userMetadata?['full_name'] ??
-              session.user.email?.split('@').first ??
-              MandalRepository().mandalProfile.name.isNotEmpty
+          fullName: session?.user.userMetadata?['full_name'] ??
+              session?.user.email?.split('@').first ??
+              savedEmail?.split('@').first ??
+              (MandalRepository().mandalProfile.name.isNotEmpty
                   ? MandalRepository().mandalProfile.name
-                  : 'Mandal Admin',
-          mobile: session.user.phone ?? MandalRepository().mandalProfile.contactNumber,
-          email: session.user.email,
+                  : 'Mandal Admin'),
+          mobile: session?.user.phone ?? MandalRepository().mandalProfile.contactNumber,
+          email: session?.user.email ?? savedEmail,
           role: 'admin',
           isMainAdmin: true,
         );
         _populateAvailableUsers();
         _isAuthenticated = true;
+        _isSubLoginUnlocked = true; // Stay unlocked directly into the application
 
         // Immediately unlock app UI
         _isInitializing = false;
         notifyListeners();
 
-        // Background non-blocking sync with timeout
+        // Background non-blocking sync with timeout if online
         () async {
           try {
-            final profRes = await SupabaseConfig.client
-                .from('profiles')
-                .select()
-                .eq('id', userId)
-                .maybeSingle()
-                .timeout(const Duration(seconds: 4));
+            if (session != null) {
+              final profRes = await SupabaseConfig.client
+                  .from('profiles')
+                  .select()
+                  .eq('id', userId)
+                  .maybeSingle()
+                  .timeout(const Duration(seconds: 4));
 
-            final activeMandalId = profRes?['mandal_id']?.toString() ?? mandalId;
-            if (activeMandalId.isNotEmpty) {
-              await MandalRepository()
-                  .syncFromSupabase(mandalId: activeMandalId)
-                  .timeout(const Duration(seconds: 10));
+              final activeMandalId = profRes?['mandal_id']?.toString() ?? mandalId;
+              if (activeMandalId.isNotEmpty) {
+                await MandalRepository()
+                    .syncFromSupabase(mandalId: activeMandalId)
+                    .timeout(const Duration(seconds: 10));
 
-              _currentProfile = UserProfile(
-                id: userId,
-                mandalId: activeMandalId,
-                fullName: profRes?['full_name'] ??
-                    session.user.userMetadata?['full_name'] ??
-                    session.user.email?.split('@').first ??
-                    'Mandal Admin',
-                mobile: profRes?['mobile'] ?? session.user.phone ?? '',
-                email: session.user.email,
-                role: profRes?['role_key'] ?? 'admin',
-                isMainAdmin: true,
-              );
-              _populateAvailableUsers();
-              notifyListeners();
+                _currentProfile = UserProfile(
+                  id: userId,
+                  mandalId: activeMandalId,
+                  fullName: profRes?['full_name'] ??
+                      session.user.userMetadata?['full_name'] ??
+                      session.user.email?.split('@').first ??
+                      'Mandal Admin',
+                  mobile: profRes?['mobile'] ?? session.user.phone ?? '',
+                  email: session.user.email,
+                  role: profRes?['role_key'] ?? 'admin',
+                  isMainAdmin: true,
+                );
+                _populateAvailableUsers();
+                notifyListeners();
+              }
+            } else if (mandalId.isNotEmpty) {
+              await MandalRepository().loadFromLocalDb(mandalId: mandalId);
             }
           } catch (e) {
             debugPrint('Background profile sync note: $e');
@@ -326,7 +334,7 @@ class AuthProvider extends ChangeNotifier {
       await prefs.setBool(_prefIsAuth, true);
 
       _isAuthenticated = true;
-      _isSubLoginUnlocked = false; // Require Sub-Login flow
+      _isSubLoginUnlocked = true;
 
       // 1. Fetch user's profile to find their mandal_id
       final profRes = await SupabaseConfig.client.from('profiles').select().eq('id', userId).maybeSingle();
@@ -471,7 +479,7 @@ class AuthProvider extends ChangeNotifier {
       await prefs.setBool(_prefIsAuth, true);
 
       _isAuthenticated = true;
-      _isSubLoginUnlocked = false;
+      _isSubLoginUnlocked = true;
       _currentProfile = UserProfile(
         id: userId,
         mandalId: mandalId,

@@ -26,11 +26,21 @@ class _MembersScreenState extends State<MembersScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Row(
+        title: Row(
           children: [
-            Icon(Icons.person_add, color: AppColors.primaryMaroon),
-            SizedBox(width: 8),
-            Text('Add Mandal Member', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+            Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(color: AppColors.primaryMaroon.withAlpha(20), shape: BoxShape.circle),
+              child: const Icon(Icons.person_add, color: AppColors.primaryMaroon, size: 20),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                AppStrings.tr('नवीन सदस्य नोंदवा', 'Add New Member'),
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 17),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
           ],
         ),
         content: SizedBox(
@@ -41,25 +51,35 @@ class _MembersScreenState extends State<MembersScreen> {
               children: [
                 TextField(
                   controller: nameCtrl,
-                  decoration: const InputDecoration(labelText: 'Full Name *', prefixIcon: Icon(Icons.person)),
+                  decoration: InputDecoration(
+                    labelText: AppStrings.tr('पूर्ण नाव *', 'Full Name *'),
+                    prefixIcon: const Icon(Icons.person),
+                  ),
                 ),
                 const SizedBox(height: 12),
                 TextField(
                   controller: mobileCtrl,
-                  decoration: const InputDecoration(labelText: 'Mobile Number *', prefixIcon: Icon(Icons.phone)),
+                  decoration: InputDecoration(
+                    labelText: AppStrings.tr('मोबाईल नंबर *', 'Mobile Number *'),
+                    prefixIcon: const Icon(Icons.phone),
+                  ),
                   keyboardType: TextInputType.phone,
                 ),
                 const SizedBox(height: 12),
                 DropdownButtonFormField<String>(
                   initialValue: selectedRole,
-                  decoration: const InputDecoration(labelText: 'Mandal Role', prefixIcon: Icon(Icons.badge)),
-                  items: const [
-                    DropdownMenuItem(value: 'President', child: Text('President')),
-                    DropdownMenuItem(value: 'Vice President', child: Text('Vice President')),
-                    DropdownMenuItem(value: 'Secretary', child: Text('Secretary')),
-                    DropdownMenuItem(value: 'Treasurer', child: Text('Treasurer')),
-                    DropdownMenuItem(value: 'Committee Member', child: Text('Committee Member')),
-                    DropdownMenuItem(value: 'Volunteer', child: Text('Volunteer')),
+                  isExpanded: true,
+                  decoration: InputDecoration(
+                    labelText: AppStrings.tr('मंडळ पद / भूमिका', 'Mandal Role'),
+                    prefixIcon: const Icon(Icons.badge),
+                  ),
+                  items: [
+                    DropdownMenuItem(value: 'President', child: Text(AppStrings.tr('अध्यक्ष (President)', 'President'))),
+                    DropdownMenuItem(value: 'Vice President', child: Text(AppStrings.tr('उपाध्यक्ष (Vice President)', 'Vice President'))),
+                    DropdownMenuItem(value: 'Secretary', child: Text(AppStrings.tr('सचिव / कार्यवाह (Secretary)', 'Secretary'))),
+                    DropdownMenuItem(value: 'Treasurer', child: Text(AppStrings.tr('खजिनदार (Treasurer)', 'Treasurer'))),
+                    DropdownMenuItem(value: 'Committee Member', child: Text(AppStrings.tr('समिती सदस्य (Committee Member)', 'Committee Member'))),
+                    DropdownMenuItem(value: 'Volunteer', child: Text(AppStrings.tr('कार्यकर्ता / स्वयंसेवक (Volunteer)', 'Volunteer'))),
                   ],
                   onChanged: (val) {
                     if (val != null) selectedRole = val;
@@ -68,15 +88,30 @@ class _MembersScreenState extends State<MembersScreen> {
                 const SizedBox(height: 12),
                 TextField(
                   controller: addressCtrl,
-                  decoration: const InputDecoration(labelText: 'Address', prefixIcon: Icon(Icons.home)),
+                  decoration: InputDecoration(
+                    labelText: AppStrings.tr('पत्ता / गाव', 'Address'),
+                    prefixIcon: const Icon(Icons.home),
+                  ),
                 ),
               ],
             ),
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(
+              AppStrings.tr('रद्द करा', 'Cancel'),
+              style: const TextStyle(color: AppColors.textSecondary, fontWeight: FontWeight.bold),
+            ),
+          ),
           ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primaryMaroon,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            ),
             onPressed: () async {
               if (nameCtrl.text.trim().isEmpty || mobileCtrl.text.trim().isEmpty) return;
               final messenger = ScaffoldMessenger.of(context);
@@ -96,7 +131,10 @@ class _MembersScreenState extends State<MembersScreen> {
                   setState(() {});
                   messenger.showSnackBar(
                     SnackBar(
-                      content: Text('${newMember.fullName} added to Mandal!'),
+                      content: Text(AppStrings.tr(
+                        '${newMember.fullName} यांची सदस्य म्हणून यशस्वीरित्या नोंद झाली!',
+                        '${newMember.fullName} added to Mandal!',
+                      )),
                       backgroundColor: AppColors.successGreen,
                     ),
                   );
@@ -109,7 +147,10 @@ class _MembersScreenState extends State<MembersScreen> {
                 }
               }
             },
-            child: const Text('Save Member'),
+            child: Text(
+              AppStrings.tr('सदस्य जतन करा', 'Save Member'),
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
           ),
         ],
       ),

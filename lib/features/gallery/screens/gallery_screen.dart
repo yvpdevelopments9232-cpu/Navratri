@@ -384,31 +384,51 @@ class _GalleryScreenState extends State<GalleryScreen> {
   }
 
   Widget _buildMediaImage(String fileUrl, {BoxFit fit = BoxFit.cover}) {
-    if (fileUrl.startsWith('data:image') || (fileUrl.length > 200 && !fileUrl.startsWith('http'))) {
+    if (fileUrl.startsWith('data:image') || (fileUrl.length > 200 && !fileUrl.startsWith('http') && !fileUrl.startsWith('assets/'))) {
       try {
         final clean = fileUrl.contains(',') ? fileUrl.split(',').last : fileUrl;
         final bytes = base64Decode(clean);
         return Image.memory(
           bytes,
           fit: fit,
-          errorBuilder: (ctx, err, stack) => const Center(
-            child: Icon(Icons.broken_image, color: Colors.grey, size: 36),
-          ),
+          errorBuilder: (_, _, _) => _buildPlaceholderPhoto(),
         );
       } catch (e) {
-        return const Center(child: Icon(Icons.broken_image, color: Colors.grey, size: 36));
+        return _buildPlaceholderPhoto();
       }
+    } else if (fileUrl.startsWith('assets/')) {
+      return Image.asset(
+        fileUrl,
+        fit: fit,
+        errorBuilder: (_, _, _) => _buildPlaceholderPhoto(),
+      );
     } else if (fileUrl.startsWith('http://') || fileUrl.startsWith('https://')) {
       return Image.network(
         fileUrl,
         fit: fit,
-        errorBuilder: (ctx, err, stack) => const Center(
-          child: Icon(Icons.broken_image, color: Colors.grey, size: 36),
-        ),
+        errorBuilder: (_, _, _) => _buildPlaceholderPhoto(),
       );
     } else {
-      return const Center(child: Icon(Icons.image, color: Colors.grey, size: 36));
+      return _buildPlaceholderPhoto();
     }
+  }
+
+  Widget _buildPlaceholderPhoto() {
+    return Container(
+      color: const Color(0xFFFFF9E6),
+      alignment: Alignment.center,
+      child: Image.asset(
+        'assets/images/app_logo.png',
+        width: 64,
+        height: 64,
+        fit: BoxFit.contain,
+        errorBuilder: (_, _, _) => const Icon(
+          Icons.temple_hindu,
+          color: AppColors.primaryMaroon,
+          size: 40,
+        ),
+      ),
+    );
   }
 
   @override

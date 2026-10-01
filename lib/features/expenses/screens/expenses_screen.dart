@@ -55,195 +55,248 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
     showDialog(
       context: context,
       builder: (ctx) => StatefulBuilder(
-        builder: (context, setModalState) => AlertDialog(
-          title: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(color: AppColors.expenseRed.withAlpha(30), shape: BoxShape.circle),
-                child: const Icon(Icons.shopping_bag_outlined, color: AppColors.expenseRed, size: 20),
+        builder: (context, setModalState) {
+          final isMobile = MediaQuery.of(context).size.width < 600;
+
+          Widget buildFieldRow({required Widget first, required Widget second}) {
+            if (isMobile) {
+              return Column(
+                children: [
+                  first,
+                  const SizedBox(height: 12),
+                  second,
+                ],
+              );
+            }
+            return Row(
+              children: [
+                Expanded(child: first),
+                const SizedBox(width: 12),
+                Expanded(child: second),
+              ],
+            );
+          }
+
+          return AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            title: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(color: AppColors.expenseRed.withAlpha(30), shape: BoxShape.circle),
+                  child: const Icon(Icons.shopping_bag_outlined, color: AppColors.expenseRed, size: 20),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    AppStrings.tr('नवीन खर्च नोंदवा', 'Add Expense'),
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 17),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+            content: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 550),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    buildFieldRow(
+                      first: TextFormField(
+                        initialValue: nextExpenseNo,
+                        readOnly: true,
+                        decoration: InputDecoration(
+                          labelText: AppStrings.tr('व्हाउचर क्र.', 'Expense No.'),
+                          prefixIcon: const Icon(Icons.tag),
+                        ),
+                      ),
+                      second: TextField(
+                        controller: dateCtrl,
+                        decoration: InputDecoration(
+                          labelText: AppStrings.tr('तारीख', 'Date'),
+                          prefixIcon: const Icon(Icons.calendar_today),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    buildFieldRow(
+                      first: DropdownButtonFormField<String>(
+                        initialValue: selectedCategory,
+                        isExpanded: true,
+                        decoration: InputDecoration(
+                          labelText: AppStrings.tr('खर्च प्रवर्ग (Category)', 'Category'),
+                        ),
+                        items: [
+                          DropdownMenuItem(value: 'Decoration', child: Text(AppStrings.tr('मंडप व सजावट', 'Decoration'), overflow: TextOverflow.ellipsis)),
+                          DropdownMenuItem(value: 'Sound', child: Text(AppStrings.tr('ध्वनिव्यवस्था (Sound)', 'Sound'), overflow: TextOverflow.ellipsis)),
+                          DropdownMenuItem(value: 'Lighting', child: Text(AppStrings.tr('विद्युत रोषणाई', 'Lighting'), overflow: TextOverflow.ellipsis)),
+                          DropdownMenuItem(value: 'Stage', child: Text(AppStrings.tr('स्टेज / स्टेजिंग', 'Stage'), overflow: TextOverflow.ellipsis)),
+                          DropdownMenuItem(value: 'Idol', child: Text(AppStrings.tr('मूर्ती व प्रतिष्ठापना', 'Idol'), overflow: TextOverflow.ellipsis)),
+                          DropdownMenuItem(value: 'Prasad', child: Text(AppStrings.tr('प्रसाद व पूजा साहित्य', 'Prasad'), overflow: TextOverflow.ellipsis)),
+                          DropdownMenuItem(value: 'Food', child: Text(AppStrings.tr('महाप्रसाद / भोजन', 'Food / Mahaprasad'), overflow: TextOverflow.ellipsis)),
+                          DropdownMenuItem(value: 'Advertisement', child: Text(AppStrings.tr('जाहिरात व प्रसिद्धी', 'Advertisement'), overflow: TextOverflow.ellipsis)),
+                          DropdownMenuItem(value: 'Security', child: Text(AppStrings.tr('सुरक्षा व्यवस्था', 'Security'), overflow: TextOverflow.ellipsis)),
+                          DropdownMenuItem(value: 'Miscellaneous', child: Text(AppStrings.tr('इतर किरकोळ खर्च', 'Miscellaneous'), overflow: TextOverflow.ellipsis)),
+                        ],
+                        onChanged: (val) {
+                          if (val != null) setModalState(() => selectedCategory = val);
+                        },
+                      ),
+                      second: DropdownButtonFormField<String>(
+                        initialValue: selectedVendor,
+                        isExpanded: true,
+                        decoration: InputDecoration(
+                          labelText: AppStrings.tr('व्यापारी / सेवा पुरवठादार', 'Vendor'),
+                        ),
+                        items: vendorList
+                            .map((v) => DropdownMenuItem(value: v, child: Text(v, overflow: TextOverflow.ellipsis)))
+                            .toList(),
+                        onChanged: (val) {
+                          if (val != null) setModalState(() => selectedVendor = val);
+                        },
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: descCtrl,
+                      decoration: InputDecoration(
+                        labelText: AppStrings.tr('तपशील / वर्णन *', 'Description *'),
+                        hintText: AppStrings.tr('उदा. स्टेज सजावट, फुलमाळा', 'Stage Decoration'),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    buildFieldRow(
+                      first: TextField(
+                        controller: amountCtrl,
+                        decoration: InputDecoration(
+                          labelText: AppStrings.tr('रक्कम (₹) *', 'Amount (₹) *'),
+                          prefixIcon: const Icon(Icons.currency_rupee),
+                        ),
+                        keyboardType: TextInputType.number,
+                      ),
+                      second: DropdownButtonFormField<String>(
+                        initialValue: selectedPaymentMode,
+                        isExpanded: true,
+                        decoration: InputDecoration(
+                          labelText: AppStrings.tr('पैसे देण्याची पद्धत', 'Payment Mode'),
+                        ),
+                        items: [
+                          DropdownMenuItem(value: 'Cash', child: Text(AppStrings.tr('रोख (Cash)', 'Cash'))),
+                          DropdownMenuItem(value: 'UPI', child: Text(AppStrings.tr('UPI / ऑनलाइन', 'UPI'))),
+                          DropdownMenuItem(value: 'Bank Transfer', child: Text(AppStrings.tr('बँक ट्रान्सफर', 'Bank Transfer'))),
+                          DropdownMenuItem(value: 'Cheque', child: Text(AppStrings.tr('धनादेश (Cheque)', 'Cheque'))),
+                        ],
+                        onChanged: (val) {
+                          if (val != null) setModalState(() => selectedPaymentMode = val);
+                        },
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    buildFieldRow(
+                      first: DropdownButtonFormField<String>(
+                        initialValue: selectedPaidBy,
+                        isExpanded: true,
+                        decoration: InputDecoration(
+                          labelText: AppStrings.tr('खर्च अदा करणारा', 'Paid By'),
+                        ),
+                        items: paidByList
+                            .map((p) => DropdownMenuItem(value: p, child: Text(p, overflow: TextOverflow.ellipsis)))
+                            .toList(),
+                        onChanged: (val) {
+                          if (val != null) setModalState(() => selectedPaidBy = val);
+                        },
+                      ),
+                      second: OutlinedButton.icon(
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          side: const BorderSide(color: AppColors.primaryMaroon),
+                        ),
+                        onPressed: () {
+                          setModalState(() => billFileName = 'uploaded_bill.pdf');
+                        },
+                        icon: const Icon(Icons.upload_file, size: 16, color: AppColors.primaryMaroon),
+                        label: Text(
+                          billFileName == 'bill.pdf'
+                              ? AppStrings.tr('बिल जोडा (ऐच्छिक)', 'Attach Bill')
+                              : billFileName,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(fontSize: 12, color: AppColors.primaryMaroon),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: notesCtrl,
+                      decoration: InputDecoration(
+                        labelText: AppStrings.tr('विशेष नोंद / शेरा', 'Notes'),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-              const SizedBox(width: 8),
-              Expanded(
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
                 child: Text(
-                  AppStrings.tr('नवीन खर्च नोंदवा', 'Add Expense'),
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 17),
-                  overflow: TextOverflow.ellipsis,
+                  AppStrings.tr('रद्द करा', 'Cancel'),
+                  style: const TextStyle(color: AppColors.textSecondary, fontWeight: FontWeight.bold),
+                ),
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primaryMaroon,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                ),
+                onPressed: () async {
+                  final amt = double.tryParse(amountCtrl.text.trim()) ?? 0.0;
+                  if (descCtrl.text.trim().isEmpty || amt <= 0) return;
+
+                  final messenger = ScaffoldMessenger.of(context);
+                  final nav = Navigator.of(ctx);
+
+                  final newExpense = ExpenseModel(
+                    id: DateTime.now().millisecondsSinceEpoch.toString(),
+                    expenseNumber: nextExpenseNo,
+                    date: dateCtrl.text.trim(),
+                    categoryName: selectedCategory,
+                    vendorName: selectedVendor,
+                    description: descCtrl.text.trim(),
+                    amount: amt,
+                    paymentMode: selectedPaymentMode,
+                    paidBy: selectedPaidBy,
+                    billUrl: billFileName,
+                    notes: notesCtrl.text.trim(),
+                    status: 'Paid',
+                  );
+
+                  await repository.addExpense(newExpense);
+                  if (mounted) {
+                    nav.pop();
+                    setState(() {});
+                    messenger.showSnackBar(
+                      SnackBar(
+                        content: Text(AppStrings.tr(
+                          'खर्च व्हाउचर ${newExpense.expenseNumber} यशस्वीरित्या नोंदवले गेले!',
+                          'Expense ${newExpense.expenseNumber} added successfully!',
+                        )),
+                      ),
+                    );
+                  }
+                },
+                child: Text(
+                  AppStrings.tr('खर्च जतन करा', 'Save Expense'),
+                  style: const TextStyle(fontWeight: FontWeight.bold),
                 ),
               ),
             ],
-          ),
-          content: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 550),
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextFormField(
-                          initialValue: nextExpenseNo,
-                          readOnly: true,
-                          decoration: const InputDecoration(labelText: 'Expense No.', prefixIcon: Icon(Icons.tag)),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: TextField(
-                          controller: dateCtrl,
-                          decoration: const InputDecoration(labelText: 'Date', prefixIcon: Icon(Icons.calendar_today)),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: DropdownButtonFormField<String>(
-                          initialValue: selectedCategory,
-                          decoration: const InputDecoration(labelText: 'Category'),
-                          items: const [
-                            DropdownMenuItem(value: 'Decoration', child: Text('Decoration')),
-                            DropdownMenuItem(value: 'Sound', child: Text('Sound')),
-                            DropdownMenuItem(value: 'Lighting', child: Text('Lighting')),
-                            DropdownMenuItem(value: 'Stage', child: Text('Stage')),
-                            DropdownMenuItem(value: 'Idol', child: Text('Idol')),
-                            DropdownMenuItem(value: 'Prasad', child: Text('Prasad')),
-                            DropdownMenuItem(value: 'Food', child: Text('Food')),
-                            DropdownMenuItem(value: 'Advertisement', child: Text('Advertisement')),
-                            DropdownMenuItem(value: 'Security', child: Text('Security')),
-                            DropdownMenuItem(value: 'Miscellaneous', child: Text('Miscellaneous')),
-                          ],
-                          onChanged: (val) {
-                            if (val != null) setModalState(() => selectedCategory = val);
-                          },
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: DropdownButtonFormField<String>(
-                          initialValue: selectedVendor,
-                          decoration: const InputDecoration(labelText: 'Vendor'),
-                          items: vendorList
-                              .map((v) => DropdownMenuItem(value: v, child: Text(v)))
-                              .toList(),
-                          onChanged: (val) {
-                            if (val != null) setModalState(() => selectedVendor = val);
-                          },
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: descCtrl,
-                    decoration: const InputDecoration(labelText: 'Description *', hintText: 'Stage Decoration'),
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          controller: amountCtrl,
-                          decoration: const InputDecoration(labelText: 'Amount (₹) *', prefixIcon: Icon(Icons.currency_rupee)),
-                          keyboardType: TextInputType.number,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: DropdownButtonFormField<String>(
-                          initialValue: selectedPaymentMode,
-                          decoration: const InputDecoration(labelText: 'Payment Mode'),
-                          items: const [
-                            DropdownMenuItem(value: 'Cash', child: Text('Cash')),
-                            DropdownMenuItem(value: 'UPI', child: Text('UPI')),
-                            DropdownMenuItem(value: 'Bank Transfer', child: Text('Bank Transfer')),
-                            DropdownMenuItem(value: 'Cheque', child: Text('Cheque')),
-                          ],
-                          onChanged: (val) {
-                            if (val != null) setModalState(() => selectedPaymentMode = val);
-                          },
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: DropdownButtonFormField<String>(
-                          initialValue: selectedPaidBy,
-                          decoration: const InputDecoration(labelText: 'Paid By'),
-                          items: paidByList
-                              .map((p) => DropdownMenuItem(value: p, child: Text(p)))
-                              .toList(),
-                          onChanged: (val) {
-                            if (val != null) setModalState(() => selectedPaidBy = val);
-                          },
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          onPressed: () {
-                            setModalState(() => billFileName = 'uploaded_bill.pdf');
-                          },
-                          icon: const Icon(Icons.upload_file, size: 16),
-                          label: Text(billFileName, overflow: TextOverflow.ellipsis),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: notesCtrl,
-                    decoration: const InputDecoration(labelText: 'Notes'),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
-            ElevatedButton(
-              onPressed: () async {
-                final amt = double.tryParse(amountCtrl.text.trim()) ?? 0.0;
-                if (descCtrl.text.trim().isEmpty || amt <= 0) return;
-
-                final messenger = ScaffoldMessenger.of(context);
-                final nav = Navigator.of(ctx);
-
-                final newExpense = ExpenseModel(
-                  id: DateTime.now().millisecondsSinceEpoch.toString(),
-                  expenseNumber: nextExpenseNo,
-                  date: dateCtrl.text.trim(),
-                  categoryName: selectedCategory,
-                  vendorName: selectedVendor,
-                  description: descCtrl.text.trim(),
-                  amount: amt,
-                  paymentMode: selectedPaymentMode,
-                  paidBy: selectedPaidBy,
-                  billUrl: billFileName,
-                  notes: notesCtrl.text.trim(),
-                  status: 'Paid',
-                );
-
-                await repository.addExpense(newExpense);
-                if (mounted) {
-                  nav.pop();
-                  setState(() {});
-                  messenger.showSnackBar(
-                    SnackBar(content: Text('Expense ${newExpense.expenseNumber} added successfully!')),
-                  );
-                }
-              },
-              child: const Text('Save Expense'),
-            ),
-          ],
-        ),
+          );
+        },
       ),
     );
   }
