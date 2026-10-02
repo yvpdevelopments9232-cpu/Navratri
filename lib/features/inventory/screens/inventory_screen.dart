@@ -87,20 +87,21 @@ class _InventoryScreenState extends State<InventoryScreen> {
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx), child: Text(AppStrings.tr('रद्द करा', 'Cancel'))),
           ElevatedButton(
-            onPressed: () {
+            onPressed: () async {
               if (nameCtrl.text.trim().isEmpty) return;
-              repository.inventory.add(
+              final qty = int.tryParse(qtyCtrl.text.trim()) ?? 1;
+              Navigator.pop(ctx);
+              await repository.addInventoryItem(
                 InventoryItemModel(
-                  id: DateTime.now().millisecondsSinceEpoch.toString(),
+                  id: '',
                   itemName: nameCtrl.text.trim(),
                   category: selectedCat,
-                  quantity: int.tryParse(qtyCtrl.text.trim()) ?? 1,
+                  quantity: qty,
                   unit: selectedUnit,
                   status: 'In Stock',
                 ),
               );
-              Navigator.pop(ctx);
-              setState(() {});
+              if (mounted) setState(() {});
             },
             child: Text(AppStrings.tr('जतन करा', 'Save Item')),
           ),
@@ -108,6 +109,152 @@ class _InventoryScreenState extends State<InventoryScreen> {
       ),
     );
   }
+
+  void _showEditInventoryDialog(InventoryItemModel item) {
+    final nameCtrl = TextEditingController(text: item.itemName);
+    final qtyCtrl = TextEditingController(text: item.quantity.toString());
+    String selectedCat = item.category;
+    String selectedUnit = item.unit;
+    String selectedStatus = item.status;
+
+    final categories = ['Furniture', 'Sound', 'Lighting', 'Electrical', 'Decoration'];
+    if (!categories.contains(selectedCat)) selectedCat = 'Furniture';
+
+    final units = ['Nos', 'Sets', 'Meters'];
+    if (!units.contains(selectedUnit)) selectedUnit = 'Nos';
+
+    final statuses = ['In Stock', 'In Use', 'Damaged', 'Returned'];
+    if (!statuses.contains(selectedStatus)) selectedStatus = 'In Stock';
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setDlgState) => AlertDialog(
+          title: Row(
+            children: [
+              const Icon(Icons.edit_note, color: AppColors.infoBlue),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  AppStrings.tr('साहित्य माहिती बदला', 'Edit Inventory Item'),
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 17),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+          content: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 450),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(controller: nameCtrl, decoration: InputDecoration(labelText: AppStrings.tr('साहित्याचे नाव *', 'Item Name *'))),
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField<String>(
+                    value: selectedCat,
+                    decoration: InputDecoration(labelText: AppStrings.tr('प्रवर्ग', 'Category')),
+                    items: const [
+                      DropdownMenuItem(value: 'Furniture', child: Text('Furniture (फर्निचर/मंडप)')),
+                      DropdownMenuItem(value: 'Sound', child: Text('Sound (ध्वनी यंत्रणा)')),
+                      DropdownMenuItem(value: 'Lighting', child: Text('Lighting (लाईटिंग/रोषणाई)')),
+                      DropdownMenuItem(value: 'Electrical', child: Text('Electrical (इलेक्ट्रिकल)')),
+                      DropdownMenuItem(value: 'Decoration', child: Text('Decoration (सजावट)')),
+                    ],
+                    onChanged: (val) {
+                      if (val != null) setDlgState(() => selectedCat = val);
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(child: TextField(controller: qtyCtrl, decoration: InputDecoration(labelText: AppStrings.tr('संख्या *', 'Quantity *')), keyboardType: TextInputType.number)),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: DropdownButtonFormField<String>(
+                          value: selectedUnit,
+                          decoration: InputDecoration(labelText: AppStrings.tr('एकक', 'Unit')),
+                          items: const [
+                            DropdownMenuItem(value: 'Nos', child: Text('Nos (नग)')),
+                            DropdownMenuItem(value: 'Sets', child: Text('Sets (संच)')),
+                            DropdownMenuItem(value: 'Meters', child: Text('Meters (मीटर)')),
+                          ],
+                          onChanged: (val) {
+                            if (val != null) setDlgState(() => selectedUnit = val);
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField<String>(
+                    value: selectedStatus,
+                    decoration: InputDecoration(labelText: AppStrings.tr('स्थिती', 'Status')),
+                    items: [
+                      DropdownMenuItem(value: 'In Stock', child: Text(AppStrings.tr('उपलब्ध (In Stock)', 'In Stock'))),
+                      DropdownMenuItem(value: 'In Use', child: Text(AppStrings.tr('वापरात (In Use)', 'In Use'))),
+                      DropdownMenuItem(value: 'Damaged', child: Text(AppStrings.tr('खराब / नादुरुस्त', 'Damaged'))),
+                      DropdownMenuItem(value: 'Returned', child: Text(AppStrings.tr('परत केले (Returned)', 'Returned'))),
+                    ],
+                    onChanged: (val) {
+                      if (val != null) setDlgState(() => selectedStatus = val);
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: Text(AppStrings.tr('रद्द करा', 'Cancel'))),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: AppColors.infoBlue, foregroundColor: Colors.white),
+              onPressed: () async {
+                if (nameCtrl.text.trim().isEmpty) return;
+                final qty = int.tryParse(qtyCtrl.text.trim()) ?? item.quantity;
+                final updated = item.copyWith(
+                  itemName: nameCtrl.text.trim(),
+                  category: selectedCat,
+                  quantity: qty,
+                  unit: selectedUnit,
+                  status: selectedStatus,
+                );
+                Navigator.pop(ctx);
+                await repository.updateInventoryItem(updated);
+                if (mounted) setState(() {});
+              },
+              child: Text(AppStrings.tr('बदल सेव्ह करा', 'Save Changes')),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _confirmDeleteInventory(InventoryItemModel item) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(AppStrings.tr('साहित्य काढून टाकायचे आहे का?', 'Delete Inventory Item?')),
+        content: Text(AppStrings.tr(
+          'आपण खात्रीपूर्वक "${item.itemName}" साहित्याची नोंद काढून टाकू इच्छिता का?',
+          'Are you sure you want to delete "${item.itemName}"?',
+        )),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(AppStrings.tr('नाही / रद्द करा', 'Cancel'))),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.expenseRed, foregroundColor: Colors.white),
+            onPressed: () async {
+              Navigator.pop(ctx);
+              await repository.deleteInventoryItem(item.id);
+              if (mounted) setState(() {});
+            },
+            child: Text(AppStrings.tr('काढून टाका', 'Delete')),
+          ),
+        ],
+      ),
+    );
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -235,13 +382,17 @@ class _InventoryScreenState extends State<InventoryScreen> {
                                 Text('${item.quantity} ${item.unit}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.primaryMaroon)),
                                 const SizedBox(width: 8),
                                 IconButton(
-                                  icon: const Icon(Icons.delete, size: 18, color: AppColors.expenseRed),
+                                  icon: const Icon(Icons.edit_outlined, size: 18, color: AppColors.infoBlue),
                                   padding: EdgeInsets.zero,
                                   constraints: const BoxConstraints(),
-                                  onPressed: () {
-                                    repository.inventory.removeWhere((i) => i.id == item.id);
-                                    setState(() {});
-                                  },
+                                  onPressed: () => _showEditInventoryDialog(item),
+                                ),
+                                const SizedBox(width: 6),
+                                IconButton(
+                                  icon: const Icon(Icons.delete_outline, size: 18, color: AppColors.expenseRed),
+                                  padding: EdgeInsets.zero,
+                                  constraints: const BoxConstraints(),
+                                  onPressed: () => _confirmDeleteInventory(item),
                                 ),
                               ],
                             ),
@@ -276,13 +427,13 @@ class _InventoryScreenState extends State<InventoryScreen> {
                         DataCell(
                           Row(
                             children: [
-                              IconButton(icon: const Icon(Icons.edit, size: 18, color: AppColors.infoBlue), onPressed: () {}),
                               IconButton(
-                                icon: const Icon(Icons.delete, size: 18, color: AppColors.expenseRed),
-                                onPressed: () {
-                                  repository.inventory.removeWhere((i) => i.id == item.id);
-                                  setState(() {});
-                                },
+                                icon: const Icon(Icons.edit_outlined, size: 18, color: AppColors.infoBlue),
+                                onPressed: () => _showEditInventoryDialog(item),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.delete_outline, size: 18, color: AppColors.expenseRed),
+                                onPressed: () => _confirmDeleteInventory(item),
                               ),
                             ],
                           ),

@@ -417,6 +417,8 @@ class MandalRepository {
     }();
   }
 
+  String get _activeMandalId => mandalProfile.id.isNotEmpty ? mandalProfile.id : '00000000-0000-0000-0000-000000000001';
+
   // Mutations linked to active mandal_id
   Future<void> addDonation(DonationModel donation) async {
     final donId = (donation.id.length == 36) ? donation.id : OfflineDbHelper.generateId();
@@ -424,7 +426,7 @@ class MandalRepository {
     donations.insert(0, donationWithId);
 
     final payload = donationWithId.toJson();
-    payload['mandal_id'] = mandalProfile.id;
+    payload['mandal_id'] = _activeMandalId;
     payload['donation_date'] = _formatDateForDb(donationWithId.date);
 
     await _persistAndSync(
@@ -435,13 +437,40 @@ class MandalRepository {
     );
   }
 
+  Future<void> updateDonation(DonationModel donation) async {
+    final idx = donations.indexWhere((d) => d.id == donation.id);
+    if (idx != -1) {
+      donations[idx] = donation;
+    }
+    final payload = donation.toJson();
+    payload['mandal_id'] = _activeMandalId;
+    payload['donation_date'] = _formatDateForDb(donation.date);
+
+    await _persistAndSync(
+      table: 'donations',
+      rowId: donation.id,
+      action: 'UPSERT',
+      payload: payload,
+    );
+  }
+
+  Future<void> deleteDonation(String id) async {
+    donations.removeWhere((d) => d.id == id);
+    await _persistAndSync(
+      table: 'donations',
+      rowId: id,
+      action: 'DELETE',
+      payload: {'id': id},
+    );
+  }
+
   Future<void> addExpense(ExpenseModel expense) async {
     final expId = (expense.id.length == 36) ? expense.id : OfflineDbHelper.generateId();
     final expenseWithId = expense.copyWith(id: expId);
     expenses.insert(0, expenseWithId);
 
     final payload = expenseWithId.toJson();
-    payload['mandal_id'] = mandalProfile.id;
+    payload['mandal_id'] = _activeMandalId;
     payload['expense_date'] = _formatDateForDb(expenseWithId.date);
 
     await _persistAndSync(
@@ -452,17 +481,60 @@ class MandalRepository {
     );
   }
 
+  Future<void> updateExpense(ExpenseModel expense) async {
+    final idx = expenses.indexWhere((e) => e.id == expense.id);
+    if (idx != -1) {
+      expenses[idx] = expense;
+    }
+    final payload = expense.toJson();
+    payload['mandal_id'] = _activeMandalId;
+    payload['expense_date'] = _formatDateForDb(expense.date);
+
+    await _persistAndSync(
+      table: 'expenses',
+      rowId: expense.id,
+      action: 'UPSERT',
+      payload: payload,
+    );
+  }
+
+  Future<void> deleteExpense(String id) async {
+    expenses.removeWhere((e) => e.id == id);
+    await _persistAndSync(
+      table: 'expenses',
+      rowId: id,
+      action: 'DELETE',
+      payload: {'id': id},
+    );
+  }
+
   Future<void> addMember(MemberModel member) async {
     final memId = (member.id.length == 36) ? member.id : OfflineDbHelper.generateId();
     final memberWithId = member.copyWith(id: memId);
     members.add(memberWithId);
 
     final payload = memberWithId.toJson();
-    payload['mandal_id'] = mandalProfile.id;
+    payload['mandal_id'] = _activeMandalId;
 
     await _persistAndSync(
       table: 'mandal_members',
       rowId: memId,
+      action: 'UPSERT',
+      payload: payload,
+    );
+  }
+
+  Future<void> updateMember(MemberModel member) async {
+    final idx = members.indexWhere((m) => m.id == member.id);
+    if (idx != -1) {
+      members[idx] = member;
+    }
+    final payload = member.toJson();
+    payload['mandal_id'] = _activeMandalId;
+
+    await _persistAndSync(
+      table: 'mandal_members',
+      rowId: member.id,
       action: 'UPSERT',
       payload: payload,
     );
@@ -478,12 +550,53 @@ class MandalRepository {
     );
   }
 
+  // Bank Accounts
+  Future<void> addBankAccount(BankAccountModel account) async {
+    final accId = account.id.length == 36 ? account.id : OfflineDbHelper.generateId();
+    final accWithId = account.copyWith(id: accId);
+    bankAccounts.add(accWithId);
+    final payload = accWithId.toJson();
+    payload['mandal_id'] = _activeMandalId;
+    await _persistAndSync(
+      table: 'bank_accounts',
+      rowId: accId,
+      action: 'UPSERT',
+      payload: payload,
+    );
+  }
+
+  Future<void> updateBankAccount(BankAccountModel account) async {
+    final idx = bankAccounts.indexWhere((b) => b.id == account.id);
+    if (idx != -1) {
+      bankAccounts[idx] = account;
+    }
+    final payload = account.toJson();
+    payload['mandal_id'] = _activeMandalId;
+    await _persistAndSync(
+      table: 'bank_accounts',
+      rowId: account.id,
+      action: 'UPSERT',
+      payload: payload,
+    );
+  }
+
+  Future<void> deleteBankAccount(String id) async {
+    bankAccounts.removeWhere((b) => b.id == id);
+    await _persistAndSync(
+      table: 'bank_accounts',
+      rowId: id,
+      action: 'DELETE',
+      payload: {'id': id},
+    );
+  }
+
   Future<void> addParticipant(GarbaParticipantModel participant) async {
-    participants.insert(0, participant);
     final rowId = participant.id.length == 36 ? participant.id : OfflineDbHelper.generateId();
-    final payload = participant.toJson();
+    final pWithId = participant.copyWith(id: rowId);
+    participants.insert(0, pWithId);
+    final payload = pWithId.toJson();
     payload['id'] = rowId;
-    payload['mandal_id'] = mandalProfile.id;
+    payload['mandal_id'] = _activeMandalId;
 
     await _persistAndSync(
       table: 'event_participants',
@@ -493,12 +606,37 @@ class MandalRepository {
     );
   }
 
+  Future<void> updateParticipant(GarbaParticipantModel participant) async {
+    final idx = participants.indexWhere((p) => p.id == participant.id);
+    if (idx != -1) participants[idx] = participant;
+    final payload = participant.toJson();
+    payload['id'] = participant.id;
+    payload['mandal_id'] = _activeMandalId;
+    await _persistAndSync(
+      table: 'event_participants',
+      rowId: participant.id,
+      action: 'UPSERT',
+      payload: payload,
+    );
+  }
+
+  Future<void> deleteParticipant(String id) async {
+    participants.removeWhere((p) => p.id == id);
+    await _persistAndSync(
+      table: 'event_participants',
+      rowId: id,
+      action: 'DELETE',
+      payload: {'id': id},
+    );
+  }
+
   Future<void> addEvent(EventModel event) async {
-    events.add(event);
     final rowId = event.id.length == 36 ? event.id : OfflineDbHelper.generateId();
-    final payload = event.toJson();
+    final evWithId = event.copyWith(id: rowId);
+    events.add(evWithId);
+    final payload = evWithId.toJson();
     payload['id'] = rowId;
-    payload['mandal_id'] = mandalProfile.id;
+    payload['mandal_id'] = _activeMandalId;
 
     await _persistAndSync(
       table: 'events',
@@ -508,12 +646,37 @@ class MandalRepository {
     );
   }
 
+  Future<void> updateEvent(EventModel event) async {
+    final idx = events.indexWhere((e) => e.id == event.id);
+    if (idx != -1) events[idx] = event;
+    final payload = event.toJson();
+    payload['id'] = event.id;
+    payload['mandal_id'] = _activeMandalId;
+    await _persistAndSync(
+      table: 'events',
+      rowId: event.id,
+      action: 'UPSERT',
+      payload: payload,
+    );
+  }
+
+  Future<void> deleteEvent(String id) async {
+    events.removeWhere((e) => e.id == id);
+    await _persistAndSync(
+      table: 'events',
+      rowId: id,
+      action: 'DELETE',
+      payload: {'id': id},
+    );
+  }
+
   Future<void> addVolunteer(VolunteerModel volunteer) async {
-    volunteers.add(volunteer);
     final rowId = volunteer.id.length == 36 ? volunteer.id : OfflineDbHelper.generateId();
-    final payload = volunteer.toJson();
+    final volWithId = volunteer.copyWith(id: rowId);
+    volunteers.add(volWithId);
+    final payload = volWithId.toJson();
     payload['id'] = rowId;
-    payload['mandal_id'] = mandalProfile.id;
+    payload['mandal_id'] = _activeMandalId;
 
     await _persistAndSync(
       table: 'volunteers',
@@ -523,12 +686,37 @@ class MandalRepository {
     );
   }
 
+  Future<void> updateVolunteer(VolunteerModel volunteer) async {
+    final idx = volunteers.indexWhere((v) => v.id == volunteer.id);
+    if (idx != -1) volunteers[idx] = volunteer;
+    final payload = volunteer.toJson();
+    payload['id'] = volunteer.id;
+    payload['mandal_id'] = _activeMandalId;
+    await _persistAndSync(
+      table: 'volunteers',
+      rowId: volunteer.id,
+      action: 'UPSERT',
+      payload: payload,
+    );
+  }
+
+  Future<void> deleteVolunteer(String id) async {
+    volunteers.removeWhere((v) => v.id == id);
+    await _persistAndSync(
+      table: 'volunteers',
+      rowId: id,
+      action: 'DELETE',
+      payload: {'id': id},
+    );
+  }
+
   Future<void> addVendor(VendorModel vendor) async {
-    vendors.add(vendor);
     final rowId = vendor.id.length == 36 ? vendor.id : OfflineDbHelper.generateId();
-    final payload = vendor.toJson();
+    final venWithId = vendor.copyWith(id: rowId);
+    vendors.add(venWithId);
+    final payload = venWithId.toJson();
     payload['id'] = rowId;
-    payload['mandal_id'] = mandalProfile.id;
+    payload['mandal_id'] = _activeMandalId;
 
     await _persistAndSync(
       table: 'vendors',
@@ -538,12 +726,37 @@ class MandalRepository {
     );
   }
 
+  Future<void> updateVendor(VendorModel vendor) async {
+    final idx = vendors.indexWhere((v) => v.id == vendor.id);
+    if (idx != -1) vendors[idx] = vendor;
+    final payload = vendor.toJson();
+    payload['id'] = vendor.id;
+    payload['mandal_id'] = _activeMandalId;
+    await _persistAndSync(
+      table: 'vendors',
+      rowId: vendor.id,
+      action: 'UPSERT',
+      payload: payload,
+    );
+  }
+
+  Future<void> deleteVendor(String id) async {
+    vendors.removeWhere((v) => v.id == id);
+    await _persistAndSync(
+      table: 'vendors',
+      rowId: id,
+      action: 'DELETE',
+      payload: {'id': id},
+    );
+  }
+
   Future<void> addInventoryItem(InventoryItemModel item) async {
-    inventory.add(item);
     final rowId = item.id.length == 36 ? item.id : OfflineDbHelper.generateId();
-    final payload = item.toJson();
+    final itemWithId = item.copyWith(id: rowId);
+    inventory.add(itemWithId);
+    final payload = itemWithId.toJson();
     payload['id'] = rowId;
-    payload['mandal_id'] = mandalProfile.id;
+    payload['mandal_id'] = _activeMandalId;
 
     await _persistAndSync(
       table: 'inventory_items',
@@ -553,12 +766,36 @@ class MandalRepository {
     );
   }
 
+  Future<void> updateInventoryItem(InventoryItemModel item) async {
+    final idx = inventory.indexWhere((i) => i.id == item.id);
+    if (idx != -1) inventory[idx] = item;
+    final payload = item.toJson();
+    payload['id'] = item.id;
+    payload['mandal_id'] = _activeMandalId;
+    await _persistAndSync(
+      table: 'inventory_items',
+      rowId: item.id,
+      action: 'UPSERT',
+      payload: payload,
+    );
+  }
+
+  Future<void> deleteInventoryItem(String id) async {
+    inventory.removeWhere((i) => i.id == id);
+    await _persistAndSync(
+      table: 'inventory_items',
+      rowId: id,
+      action: 'DELETE',
+      payload: {'id': id},
+    );
+  }
+
   Future<void> addDocument(DocumentModel doc) async {
     documents.add(doc);
     final rowId = doc.id.length == 36 ? doc.id : OfflineDbHelper.generateId();
     final payload = doc.toJson();
     payload['id'] = rowId;
-    payload['mandal_id'] = mandalProfile.id;
+    payload['mandal_id'] = _activeMandalId;
 
     await _persistAndSync(
       table: 'documents',
@@ -569,11 +806,12 @@ class MandalRepository {
   }
 
   Future<void> addSponsor(SponsorModel sponsor) async {
-    sponsors.add(sponsor);
     final rowId = sponsor.id.length == 36 ? sponsor.id : OfflineDbHelper.generateId();
-    final payload = sponsor.toJson();
+    final spWithId = sponsor.copyWith(id: rowId);
+    sponsors.add(spWithId);
+    final payload = spWithId.toJson();
     payload['id'] = rowId;
-    payload['mandal_id'] = mandalProfile.id;
+    payload['mandal_id'] = _activeMandalId;
 
     await _persistAndSync(
       table: 'sponsors',
@@ -583,18 +821,67 @@ class MandalRepository {
     );
   }
 
+  Future<void> updateSponsor(SponsorModel sponsor) async {
+    final idx = sponsors.indexWhere((s) => s.id == sponsor.id);
+    if (idx != -1) sponsors[idx] = sponsor;
+    final payload = sponsor.toJson();
+    payload['id'] = sponsor.id;
+    payload['mandal_id'] = _activeMandalId;
+    await _persistAndSync(
+      table: 'sponsors',
+      rowId: sponsor.id,
+      action: 'UPSERT',
+      payload: payload,
+    );
+  }
+
+  Future<void> deleteSponsor(String id) async {
+    sponsors.removeWhere((s) => s.id == id);
+    await _persistAndSync(
+      table: 'sponsors',
+      rowId: id,
+      action: 'DELETE',
+      payload: {'id': id},
+    );
+  }
+
   Future<void> addAarti(AartiModel aarti) async {
-    aartis.add(aarti);
     final rowId = aarti.id.length == 36 ? aarti.id : OfflineDbHelper.generateId();
-    final payload = aarti.toJson();
+    final aWithId = aarti.copyWith(id: rowId);
+    aartis.add(aWithId);
+    final payload = aWithId.toJson();
     payload['id'] = rowId;
-    payload['mandal_id'] = mandalProfile.id;
+    payload['mandal_id'] = _activeMandalId;
 
     await _persistAndSync(
       table: 'aarti_schedule',
       rowId: rowId,
       action: 'UPSERT',
       payload: payload,
+    );
+  }
+
+  Future<void> updateAarti(AartiModel aarti) async {
+    final idx = aartis.indexWhere((a) => a.id == aarti.id);
+    if (idx != -1) aartis[idx] = aarti;
+    final payload = aarti.toJson();
+    payload['id'] = aarti.id;
+    payload['mandal_id'] = _activeMandalId;
+    await _persistAndSync(
+      table: 'aarti_schedule',
+      rowId: aarti.id,
+      action: 'UPSERT',
+      payload: payload,
+    );
+  }
+
+  Future<void> deleteAarti(String id) async {
+    aartis.removeWhere((a) => a.id == id);
+    await _persistAndSync(
+      table: 'aarti_schedule',
+      rowId: id,
+      action: 'DELETE',
+      payload: {'id': id},
     );
   }
 
@@ -627,7 +914,7 @@ class MandalRepository {
     final rowId = media.id.length == 36 ? media.id : OfflineDbHelper.generateId();
     final payload = media.toJson();
     payload['id'] = rowId;
-    payload['mandal_id'] = mandalProfile.id;
+    payload['mandal_id'] = _activeMandalId;
 
     await _persistAndSync(
       table: 'gallery',

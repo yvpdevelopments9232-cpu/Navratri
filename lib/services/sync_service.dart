@@ -242,11 +242,20 @@ class SyncService {
           await db.delete('sync_queue', where: 'id = ?', whereArgs: [id]);
         } catch (e) {
           debugPrint('Error syncing queue item $id for $tableName: $e');
-          // Increment retry count
-          await db.rawUpdate(
-            'UPDATE sync_queue SET retry_count = retry_count + 1 WHERE id = ?',
-            [id],
-          );
+          final errStr = e.toString();
+          final retries = (row['retry_count'] as int? ?? 0) + 1;
+          // Avoid infinite stuck pending counts on permanent constraint violations
+          if (retries >= 3 || errStr.contains('duplicate key') || errStr.contains('23505') || errStr.contains('violates foreign key')) {
+            await db.rawUpdate(
+              "UPDATE sync_queue SET status = 'failed', retry_count = ? WHERE id = ?",
+              [retries, id],
+            );
+          } else {
+            await db.rawUpdate(
+              'UPDATE sync_queue SET retry_count = ? WHERE id = ?',
+              [retries, id],
+            );
+          }
         }
       }
 
@@ -356,6 +365,16 @@ class SyncService {
     } catch (e) {
       debugPrint('Error caching repository to SQLite: $e');
     }
+  }
+
+  Future<void> clearPendingQueue() async {
+    await OfflineDbHelper.instance.clearPendingSyncQueue();
+    await refreshPendingCount();
+    state.value = state.value.copyWith(
+      pendingCount: 0,
+      status: SyncStatus.idle,
+      message: 'Queue cleared',
+    );
   }
 
   void stop() {

@@ -395,6 +395,26 @@ class BankAccountModel {
     'current_balance': balance,
   };
 
+  BankAccountModel copyWith({
+    String? id,
+    String? bankName,
+    String? branchName,
+    String? accountHolder,
+    String? accountNumber,
+    String? ifsc,
+    double? balance,
+  }) {
+    return BankAccountModel(
+      id: id ?? this.id,
+      bankName: bankName ?? this.bankName,
+      branchName: branchName ?? this.branchName,
+      accountHolder: accountHolder ?? this.accountHolder,
+      accountNumber: accountNumber ?? this.accountNumber,
+      ifsc: ifsc ?? this.ifsc,
+      balance: balance ?? this.balance,
+    );
+  }
+
   String get ifscCode => ifsc;
   double get currentBalance => balance;
 }
@@ -443,6 +463,28 @@ class EventModel {
     'status': status,
     if (description != null) 'description': description,
   };
+
+  EventModel copyWith({
+    String? id,
+    String? eventName,
+    String? date,
+    String? startTime,
+    String? endTime,
+    String? venue,
+    String? status,
+    String? description,
+  }) {
+    return EventModel(
+      id: id ?? this.id,
+      eventName: eventName ?? this.eventName,
+      date: date ?? this.date,
+      startTime: startTime ?? this.startTime,
+      endTime: endTime ?? this.endTime,
+      venue: venue ?? this.venue,
+      status: status ?? this.status,
+      description: description ?? this.description,
+    );
+  }
 
   String get title => eventName;
   String get location => venue;
@@ -494,6 +536,28 @@ class GarbaParticipantModel {
     'status': status,
   };
 
+  GarbaParticipantModel copyWith({
+    String? id,
+    String? regNumber,
+    String? name,
+    String? mobile,
+    int? age,
+    String? gender,
+    double? amount,
+    String? status,
+  }) {
+    return GarbaParticipantModel(
+      id: id ?? this.id,
+      regNumber: regNumber ?? this.regNumber,
+      name: name ?? this.name,
+      mobile: mobile ?? this.mobile,
+      age: age ?? this.age,
+      gender: gender ?? this.gender,
+      amount: amount ?? this.amount,
+      status: status ?? this.status,
+    );
+  }
+
   String get passNumber => regNumber;
   String get participantName => name;
   String get competitionCategory => gender == 'M' ? 'पुरुष (Men)' : 'महिला (Women)';
@@ -540,6 +604,26 @@ class VolunteerModel {
     'status': status,
     if (photoUrl != null) 'photo_url': photoUrl,
   };
+
+  VolunteerModel copyWith({
+    String? id,
+    String? code,
+    String? name,
+    String? mobile,
+    String? department,
+    String? status,
+    String? photoUrl,
+  }) {
+    return VolunteerModel(
+      id: id ?? this.id,
+      code: code ?? this.code,
+      name: name ?? this.name,
+      mobile: mobile ?? this.mobile,
+      department: department ?? this.department,
+      status: status ?? this.status,
+      photoUrl: photoUrl ?? this.photoUrl,
+    );
+  }
 
   String get volunteerCode => code;
   String get fullName => name;
@@ -600,6 +684,30 @@ class VendorModel {
     'remaining_amount': remainingAmount,
     'status': status,
   };
+
+  VendorModel copyWith({
+    String? id,
+    String? vendorCode,
+    String? vendorName,
+    String? serviceType,
+    String? contact,
+    double? contractAmount,
+    double? paidAmount,
+    double? remainingAmount,
+    String? status,
+  }) {
+    return VendorModel(
+      id: id ?? this.id,
+      vendorCode: vendorCode ?? this.vendorCode,
+      vendorName: vendorName ?? this.vendorName,
+      serviceType: serviceType ?? this.serviceType,
+      contact: contact ?? this.contact,
+      contractAmount: contractAmount ?? this.contractAmount,
+      paidAmount: paidAmount ?? this.paidAmount,
+      remainingAmount: remainingAmount ?? this.remainingAmount,
+      status: status ?? this.status,
+    );
+  }
 }
 
 class InventoryItemModel {
@@ -638,6 +746,24 @@ class InventoryItemModel {
     'unit': unit,
     'status': status,
   };
+
+  InventoryItemModel copyWith({
+    String? id,
+    String? itemName,
+    String? category,
+    int? quantity,
+    String? unit,
+    String? status,
+  }) {
+    return InventoryItemModel(
+      id: id ?? this.id,
+      itemName: itemName ?? this.itemName,
+      category: category ?? this.category,
+      quantity: quantity ?? this.quantity,
+      unit: unit ?? this.unit,
+      status: status ?? this.status,
+    );
+  }
 }
 
 class DocumentModel {
@@ -714,6 +840,24 @@ class SponsorModel {
     'paid_amount': paidAmount,
     'payment_status': status,
   };
+
+  SponsorModel copyWith({
+    String? id,
+    String? sponsorName,
+    String? package,
+    double? amount,
+    double? paidAmount,
+    String? status,
+  }) {
+    return SponsorModel(
+      id: id ?? this.id,
+      sponsorName: sponsorName ?? this.sponsorName,
+      package: package ?? this.package,
+      amount: amount ?? this.amount,
+      paidAmount: paidAmount ?? this.paidAmount,
+      status: status ?? this.status,
+    );
+  }
 
   String get category => package;
   String get contact => status;
@@ -803,6 +947,22 @@ class AartiModel {
     'aarti_time': time,
     'lead_person': leadPerson,
   };
+
+  AartiModel copyWith({
+    String? id,
+    String? aartiName,
+    String? date,
+    String? time,
+    String? leadPerson,
+  }) {
+    return AartiModel(
+      id: id ?? this.id,
+      aartiName: aartiName ?? this.aartiName,
+      date: date ?? this.date,
+      time: time ?? this.time,
+      leadPerson: leadPerson ?? this.leadPerson,
+    );
+  }
 }
 
 class IdolModel {

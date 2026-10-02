@@ -573,6 +573,24 @@ class OfflineDbHelper {
     }
   }
 
+  Future<void> clearPendingSyncQueue() async {
+    try {
+      final db = await database;
+      await db.delete('sync_queue');
+    } catch (e) {
+      debugPrint('Error clearing sync_queue: $e');
+    }
+  }
+
+  Future<void> clearFailedSyncs() async {
+    try {
+      final db = await database;
+      await db.delete('sync_queue', where: "status = 'failed'");
+    } catch (e) {
+      debugPrint('Error clearing failed syncs: $e');
+    }
+  }
+
   Future<void> close() async {
     if (_database != null && _database!.isOpen) {
       await _database!.close();

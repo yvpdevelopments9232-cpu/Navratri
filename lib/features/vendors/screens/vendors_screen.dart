@@ -59,13 +59,15 @@ class _VendorsScreenState extends State<VendorsScreen> {
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx), child: Text(AppStrings.tr('रद्द करा', 'Cancel'))),
           ElevatedButton(
-            onPressed: () {
+            onPressed: () async {
               final amt = double.tryParse(amountCtrl.text.trim()) ?? 0.0;
               if (nameCtrl.text.trim().isEmpty || amt <= 0) return;
-              repository.vendors.add(
+              final uniqueCode = 'V-${(DateTime.now().millisecondsSinceEpoch % 90000 + 10000)}';
+              Navigator.pop(ctx);
+              await repository.addVendor(
                 VendorModel(
-                  id: DateTime.now().millisecondsSinceEpoch.toString(),
-                  vendorCode: 'V-00${repository.vendors.length + 1}',
+                  id: '',
+                  vendorCode: uniqueCode,
                   vendorName: nameCtrl.text.trim(),
                   serviceType: serviceCtrl.text.trim(),
                   contact: contactCtrl.text.trim(),
@@ -75,8 +77,7 @@ class _VendorsScreenState extends State<VendorsScreen> {
                   status: 'Pending',
                 ),
               );
-              Navigator.pop(ctx);
-              setState(() {});
+              if (mounted) setState(() {});
             },
             child: Text(AppStrings.tr('जतन करा', 'Save Vendor')),
           ),
@@ -84,6 +85,118 @@ class _VendorsScreenState extends State<VendorsScreen> {
       ),
     );
   }
+
+  void _showEditVendorDialog(VendorModel vendor) {
+    final nameCtrl = TextEditingController(text: vendor.vendorName);
+    final contactCtrl = TextEditingController(text: vendor.contact);
+    final serviceCtrl = TextEditingController(text: vendor.serviceType);
+    final amountCtrl = TextEditingController(text: vendor.contractAmount.toStringAsFixed(0));
+    final paidCtrl = TextEditingController(text: vendor.paidAmount.toStringAsFixed(0));
+    String selectedStatus = vendor.status;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setDlgState) => AlertDialog(
+          title: Row(
+            children: [
+              const Icon(Icons.edit_note, color: AppColors.infoBlue),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  AppStrings.tr('व्यापारी तपशील बदला', 'Edit Vendor'),
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 17),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+          content: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 450),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(controller: nameCtrl, decoration: InputDecoration(labelText: AppStrings.tr('व्यापारी नाव *', 'Vendor Name *'))),
+                  const SizedBox(height: 12),
+                  TextField(controller: serviceCtrl, decoration: InputDecoration(labelText: AppStrings.tr('सेवा प्रकार *', 'Service Type *'))),
+                  const SizedBox(height: 12),
+                  TextField(controller: contactCtrl, decoration: InputDecoration(labelText: AppStrings.tr('मोबाईल क्रमांक *', 'Contact Mobile *')), keyboardType: TextInputType.phone),
+                  const SizedBox(height: 12),
+                  TextField(controller: amountCtrl, decoration: InputDecoration(labelText: AppStrings.tr('करार रक्कम (₹) *', 'Contract Amount (₹) *')), keyboardType: TextInputType.number),
+                  const SizedBox(height: 12),
+                  TextField(controller: paidCtrl, decoration: InputDecoration(labelText: AppStrings.tr('अदा रक्कम (₹)', 'Paid Amount (₹)')), keyboardType: TextInputType.number),
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField<String>(
+                    value: ['Pending', 'Active', 'Completed'].contains(selectedStatus) ? selectedStatus : 'Pending',
+                    decoration: InputDecoration(labelText: AppStrings.tr('स्थिती', 'Status')),
+                    items: [
+                      DropdownMenuItem(value: 'Pending', child: Text(AppStrings.tr('प्रलंबित (Pending)', 'Pending'))),
+                      DropdownMenuItem(value: 'Active', child: Text(AppStrings.tr('सक्रिय (Active)', 'Active'))),
+                      DropdownMenuItem(value: 'Completed', child: Text(AppStrings.tr('पूर्ण (Completed)', 'Completed'))),
+                    ],
+                    onChanged: (val) {
+                      if (val != null) setDlgState(() => selectedStatus = val);
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: Text(AppStrings.tr('रद्द करा', 'Cancel'))),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: AppColors.infoBlue, foregroundColor: Colors.white),
+              onPressed: () async {
+                final cAmt = double.tryParse(amountCtrl.text.trim()) ?? vendor.contractAmount;
+                final pAmt = double.tryParse(paidCtrl.text.trim()) ?? vendor.paidAmount;
+                final rAmt = (cAmt - pAmt) > 0 ? (cAmt - pAmt) : 0.0;
+                final updated = vendor.copyWith(
+                  vendorName: nameCtrl.text.trim().isEmpty ? vendor.vendorName : nameCtrl.text.trim(),
+                  serviceType: serviceCtrl.text.trim().isEmpty ? vendor.serviceType : serviceCtrl.text.trim(),
+                  contact: contactCtrl.text.trim().isEmpty ? vendor.contact : contactCtrl.text.trim(),
+                  contractAmount: cAmt,
+                  paidAmount: pAmt,
+                  remainingAmount: rAmt,
+                  status: selectedStatus,
+                );
+                Navigator.pop(ctx);
+                await repository.updateVendor(updated);
+                if (mounted) setState(() {});
+              },
+              child: Text(AppStrings.tr('बदल सेव्ह करा', 'Save Changes')),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _confirmDeleteVendor(VendorModel vendor) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(AppStrings.tr('व्यापारी काढून टाकायचा आहे का?', 'Delete Vendor?')),
+        content: Text(AppStrings.tr(
+          'आपण खात्रीपूर्वक "${vendor.vendorName}" यांची नोंद काढून टाकू इच्छिता का?',
+          'Are you sure you want to delete vendor "${vendor.vendorName}"?',
+        )),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(AppStrings.tr('नाही / रद्द करा', 'Cancel'))),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.expenseRed, foregroundColor: Colors.white),
+            onPressed: () async {
+              Navigator.pop(ctx);
+              await repository.deleteVendor(vendor.id);
+              if (mounted) setState(() {});
+            },
+            child: Text(AppStrings.tr('काढून टाका', 'Delete')),
+          ),
+        ],
+      ),
+    );
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -244,14 +357,22 @@ class _VendorsScreenState extends State<VendorsScreen> {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text('${v.serviceType} | 📞 ${v.contact}', style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
-                            IconButton(
-                              icon: const Icon(Icons.delete, size: 18, color: AppColors.expenseRed),
-                              padding: EdgeInsets.zero,
-                              constraints: const BoxConstraints(),
-                              onPressed: () {
-                                repository.vendors.removeWhere((i) => i.id == v.id);
-                                setState(() {});
-                              },
+                            Row(
+                              children: [
+                                IconButton(
+                                  icon: const Icon(Icons.edit_outlined, size: 18, color: AppColors.infoBlue),
+                                  padding: EdgeInsets.zero,
+                                  constraints: const BoxConstraints(),
+                                  onPressed: () => _showEditVendorDialog(v),
+                                ),
+                                const SizedBox(width: 8),
+                                IconButton(
+                                  icon: const Icon(Icons.delete_outline, size: 18, color: AppColors.expenseRed),
+                                  padding: EdgeInsets.zero,
+                                  constraints: const BoxConstraints(),
+                                  onPressed: () => _confirmDeleteVendor(v),
+                                ),
+                              ],
                             ),
                           ],
                         ),
@@ -300,13 +421,13 @@ class _VendorsScreenState extends State<VendorsScreen> {
                         DataCell(
                           Row(
                             children: [
-                              IconButton(icon: const Icon(Icons.edit, size: 18, color: AppColors.infoBlue), onPressed: () {}),
                               IconButton(
-                                icon: const Icon(Icons.delete, size: 18, color: AppColors.expenseRed),
-                                onPressed: () {
-                                  repository.vendors.removeWhere((i) => i.id == v.id);
-                                  setState(() {});
-                                },
+                                icon: const Icon(Icons.edit_outlined, size: 18, color: AppColors.infoBlue),
+                                onPressed: () => _showEditVendorDialog(v),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.delete_outline, size: 18, color: AppColors.expenseRed),
+                                onPressed: () => _confirmDeleteVendor(v),
                               ),
                             ],
                           ),

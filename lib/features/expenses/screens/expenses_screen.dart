@@ -301,6 +301,262 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
     );
   }
 
+  void _showEditExpenseDialog(ExpenseModel expense) {
+    final descCtrl = TextEditingController(text: expense.description);
+    final amtCtrl = TextEditingController(text: expense.amount.toStringAsFixed(0));
+    final vendorCtrl = TextEditingController(text: expense.vendorName ?? '');
+    final dateCtrl = TextEditingController(text: expense.date);
+    final paidByCtrl = TextEditingController(text: expense.paidBy);
+    final billNoCtrl = TextEditingController(text: expense.notes ?? '');
+
+    String selectedCategory = expense.categoryName;
+    String selectedMode = expense.paymentMode;
+
+    final categories = [
+      'मंडप व डेकोरेशन (Decoration)',
+      'ध्वनी व संगीत (Sound / DJ)',
+      'प्रकाश योजना (Lighting)',
+      'प्रसाद व भोजन (Food / Prasad)',
+      'मूर्ती व पूजा साहित्य (Idol & Puja)',
+      'सुरक्षा व परवानग्या (Security)',
+      'इतर संकीर्ण खर्च (Direct / Other)',
+    ];
+
+    if (!categories.contains(selectedCategory)) {
+      categories.add(selectedCategory);
+    }
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setModalState) {
+          final isMobileDialog = MediaQuery.of(context).size.width < 600;
+
+          Widget buildFieldRow(Widget left, Widget right) {
+            if (isMobileDialog) {
+              return Column(
+                children: [
+                  left,
+                  const SizedBox(height: 12),
+                  right,
+                ],
+              );
+            }
+            return Row(
+              children: [
+                Expanded(child: left),
+                const SizedBox(width: 12),
+                Expanded(child: right),
+              ],
+            );
+          }
+
+          return AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            title: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(color: AppColors.infoBlue.withAlpha(20), shape: BoxShape.circle),
+                  child: const Icon(Icons.edit, color: AppColors.infoBlue, size: 20),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    '${AppStrings.tr('खर्च नोंद बदला', 'Edit Expense')} (${expense.expenseNumber})',
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+            content: SizedBox(
+              width: 520,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    buildFieldRow(
+                      DropdownButtonFormField<String>(
+                        initialValue: selectedCategory,
+                        isExpanded: true,
+                        decoration: InputDecoration(
+                          labelText: AppStrings.tr('खर्च प्रवर्ग *', 'Category *'),
+                          prefixIcon: const Icon(Icons.category),
+                        ),
+                        items: categories
+                            .map((c) => DropdownMenuItem(value: c, child: Text(c, overflow: TextOverflow.ellipsis)))
+                            .toList(),
+                        onChanged: (val) {
+                          if (val != null) setModalState(() => selectedCategory = val);
+                        },
+                      ),
+                      TextField(
+                        controller: amtCtrl,
+                        decoration: InputDecoration(
+                          labelText: AppStrings.tr('रक्कम (₹) *', 'Amount (₹) *'),
+                          prefixIcon: const Icon(Icons.currency_rupee),
+                        ),
+                        keyboardType: TextInputType.number,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    buildFieldRow(
+                      TextField(
+                        controller: dateCtrl,
+                        decoration: InputDecoration(
+                          labelText: AppStrings.tr('तारीख *', 'Date *'),
+                          prefixIcon: const Icon(Icons.calendar_today),
+                        ),
+                      ),
+                      DropdownButtonFormField<String>(
+                        initialValue: selectedMode,
+                        isExpanded: true,
+                        decoration: InputDecoration(
+                          labelText: AppStrings.tr('पेमेंट पद्धत', 'Payment Mode'),
+                          prefixIcon: const Icon(Icons.payments),
+                        ),
+                        items: ['Cash', 'UPI / QR', 'Bank Transfer', 'Cheque']
+                            .map((m) => DropdownMenuItem(value: m, child: Text(m)))
+                            .toList(),
+                        onChanged: (val) {
+                          if (val != null) setModalState(() => selectedMode = val);
+                        },
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    buildFieldRow(
+                      TextField(
+                        controller: vendorCtrl,
+                        decoration: InputDecoration(
+                          labelText: AppStrings.tr('विक्रेता / व्यापारी नाव', 'Vendor Name'),
+                          prefixIcon: const Icon(Icons.store),
+                        ),
+                      ),
+                      TextField(
+                        controller: paidByCtrl,
+                        decoration: InputDecoration(
+                          labelText: AppStrings.tr('अदाकर्ता (कोणी दिले)', 'Paid By'),
+                          prefixIcon: const Icon(Icons.person),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    buildFieldRow(
+                      TextField(
+                        controller: billNoCtrl,
+                        decoration: InputDecoration(
+                          labelText: AppStrings.tr('बिल / पावती क्र.', 'Bill / Invoice No'),
+                          prefixIcon: const Icon(Icons.receipt),
+                        ),
+                      ),
+                      TextField(
+                        controller: descCtrl,
+                        decoration: InputDecoration(
+                          labelText: AppStrings.tr('खर्चाचा तपशील', 'Description'),
+                          prefixIcon: const Icon(Icons.description),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: Text(
+                  AppStrings.tr('रद्द करा', 'Cancel'),
+                  style: const TextStyle(color: AppColors.textSecondary, fontWeight: FontWeight.bold),
+                ),
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.infoBlue,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                ),
+                onPressed: () async {
+                  final amt = double.tryParse(amtCtrl.text.trim()) ?? 0.0;
+                  if (amt <= 0) return;
+
+                  final messenger = ScaffoldMessenger.of(context);
+                  final updatedExpense = expense.copyWith(
+                    categoryName: selectedCategory,
+                    amount: amt,
+                    date: dateCtrl.text.trim(),
+                    paymentMode: selectedMode,
+                    vendorName: vendorCtrl.text.trim().isNotEmpty ? vendorCtrl.text.trim() : null,
+                    paidBy: paidByCtrl.text.trim(),
+                    notes: billNoCtrl.text.trim().isNotEmpty ? billNoCtrl.text.trim() : null,
+                    description: descCtrl.text.trim().isNotEmpty ? descCtrl.text.trim() : selectedCategory,
+                  );
+
+                  Navigator.pop(ctx);
+                  await repository.updateExpense(updatedExpense);
+
+                  if (mounted) {
+                    setState(() {});
+                    messenger.showSnackBar(
+                      SnackBar(
+                        content: Text(AppStrings.tr(
+                          'खर्च व्हाउचर ${expense.expenseNumber} यशस्वीरित्या अद्ययावत केले!',
+                          'Expense ${expense.expenseNumber} updated successfully!',
+                        )),
+                        backgroundColor: AppColors.infoBlue,
+                      ),
+                    );
+                  }
+                },
+                child: Text(
+                  AppStrings.tr('बदल सेव्ह करा', 'Save Changes'),
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  void _confirmDeleteExpense(ExpenseModel expense) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(AppStrings.tr('खर्च नोंद काढून टाकायची आहे का?', 'Delete Expense Record?')),
+        content: Text(AppStrings.tr(
+          'आपण खात्रीपूर्वक खर्च व्हाउचर क्र. "${expense.expenseNumber}" (${expense.categoryName} - ₹${expense.amount.toInt()}) काढून टाकू इच्छिता का?',
+          'Are you sure you want to delete expense "${expense.expenseNumber}" (${expense.categoryName} - ₹${expense.amount.toInt()})?',
+        )),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(AppStrings.tr('नाही / रद्द करा', 'Cancel')),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.expenseRed, foregroundColor: Colors.white),
+            onPressed: () async {
+              Navigator.pop(ctx);
+              await repository.deleteExpense(expense.id);
+              if (mounted) {
+                setState(() {});
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(AppStrings.tr('खर्च नोंद यशस्वीरित्या काढून टाकली!', 'Expense record deleted successfully!')),
+                    backgroundColor: AppColors.expenseRed,
+                  ),
+                );
+              }
+            },
+            child: Text(AppStrings.tr('काढून टाका', 'Delete')),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
@@ -480,7 +736,38 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                               ),
                               child: Text(e.categoryName, style: const TextStyle(fontSize: 11, color: AppColors.primaryMaroon, fontWeight: FontWeight.bold)),
                             ),
-                            Text('${e.date} • ${e.paymentMode} • ${e.vendorName ?? e.paidBy}', style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Expanded(
+                              child: Text(
+                                '${e.date} • ${e.paymentMode} • ${e.vendorName ?? e.paidBy}',
+                                style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            Row(
+                              children: [
+                                IconButton(
+                                  icon: const Icon(Icons.edit_outlined, size: 20, color: AppColors.infoBlue),
+                                  padding: EdgeInsets.zero,
+                                  constraints: const BoxConstraints(),
+                                  tooltip: AppStrings.tr('बदला', 'Edit'),
+                                  onPressed: () => _showEditExpenseDialog(e),
+                                ),
+                                const SizedBox(width: 14),
+                                IconButton(
+                                  icon: const Icon(Icons.delete_outline, size: 20, color: AppColors.expenseRed),
+                                  padding: EdgeInsets.zero,
+                                  constraints: const BoxConstraints(),
+                                  tooltip: AppStrings.tr('काढून टाका', 'Delete'),
+                                  onPressed: () => _confirmDeleteExpense(e),
+                                ),
+                              ],
+                            ),
                           ],
                         ),
                       ],
@@ -503,7 +790,7 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                     DataColumn(label: Text(AppStrings.tr('पेमेंट पद्धत', 'Payment Mode'), style: const TextStyle(fontWeight: FontWeight.bold))),
                     DataColumn(label: Text(AppStrings.tr('अदाकर्ता', 'Paid By'), style: const TextStyle(fontWeight: FontWeight.bold))),
                     DataColumn(label: Text(AppStrings.tr('स्थिती', 'Status'), style: const TextStyle(fontWeight: FontWeight.bold))),
-                    DataColumn(label: Text(AppStrings.tr('बिल', 'Action'), style: const TextStyle(fontWeight: FontWeight.bold))),
+                    DataColumn(label: Text(AppStrings.tr('क्रिया', 'Action'), style: const TextStyle(fontWeight: FontWeight.bold))),
                   ],
                   rows: filteredExpenses.map((e) {
                     return DataRow(
@@ -533,14 +820,29 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                         DataCell(Text(e.paidBy)),
                         DataCell(StatusBadge(status: e.status)),
                         DataCell(
-                          IconButton(
-                            icon: const Icon(Icons.file_present, size: 18, color: AppColors.infoBlue),
-                            tooltip: 'View Bill / Invoice',
-                            onPressed: () {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text('Bill file: ${e.billUrl ?? "decoration_bill.pdf"}')),
-                              );
-                            },
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                icon: const Icon(Icons.file_present, size: 18, color: AppColors.textSecondary),
+                                tooltip: 'View Bill / Invoice',
+                                onPressed: () {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(content: Text('Bill file: ${e.billUrl ?? "decoration_bill.pdf"}')),
+                                  );
+                                },
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.edit, size: 18, color: AppColors.infoBlue),
+                                tooltip: AppStrings.tr('बदला', 'Edit'),
+                                onPressed: () => _showEditExpenseDialog(e),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.delete, size: 18, color: AppColors.expenseRed),
+                                tooltip: AppStrings.tr('काढून टाका', 'Delete'),
+                                onPressed: () => _confirmDeleteExpense(e),
+                              ),
+                            ],
                           ),
                         ),
                       ],

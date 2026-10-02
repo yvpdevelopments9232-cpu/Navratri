@@ -117,7 +117,7 @@ class _MembersScreenState extends State<MembersScreen> {
               final messenger = ScaffoldMessenger.of(context);
               final newMember = MemberModel(
                 id: OfflineDbHelper.generateId(),
-                memberCode: 'MEM-00${repository.members.length + 1}',
+                memberCode: 'MEM-${(DateTime.now().millisecondsSinceEpoch % 900000 + 100000)}',
                 fullName: nameCtrl.text.trim(),
                 role: selectedRole,
                 mobile: mobileCtrl.text.trim(),
@@ -151,6 +151,180 @@ class _MembersScreenState extends State<MembersScreen> {
               AppStrings.tr('सदस्य जतन करा', 'Save Member'),
               style: const TextStyle(fontWeight: FontWeight.bold),
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showEditMemberDialog(MemberModel member) {
+    final nameCtrl = TextEditingController(text: member.fullName);
+    final mobileCtrl = TextEditingController(text: member.mobile);
+    final addressCtrl = TextEditingController(text: member.address ?? '');
+    String selectedRole = member.role;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(color: AppColors.infoBlue.withAlpha(20), shape: BoxShape.circle),
+              child: const Icon(Icons.edit, color: AppColors.infoBlue, size: 20),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                AppStrings.tr('सदस्य माहिती बदला', 'Edit Member Details'),
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 17),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+        content: SizedBox(
+          width: 450,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: nameCtrl,
+                  decoration: InputDecoration(
+                    labelText: AppStrings.tr('पूर्ण नाव *', 'Full Name *'),
+                    prefixIcon: const Icon(Icons.person),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: mobileCtrl,
+                  decoration: InputDecoration(
+                    labelText: AppStrings.tr('मोबाईल नंबर *', 'Mobile Number *'),
+                    prefixIcon: const Icon(Icons.phone),
+                  ),
+                  keyboardType: TextInputType.phone,
+                ),
+                const SizedBox(height: 12),
+                DropdownButtonFormField<String>(
+                  initialValue: selectedRole,
+                  isExpanded: true,
+                  decoration: InputDecoration(
+                    labelText: AppStrings.tr('मंडळ पद / भूमिका', 'Mandal Role'),
+                    prefixIcon: const Icon(Icons.badge),
+                  ),
+                  items: [
+                    DropdownMenuItem(value: 'President', child: Text(AppStrings.tr('अध्यक्ष (President)', 'President'))),
+                    DropdownMenuItem(value: 'Vice President', child: Text(AppStrings.tr('उपाध्यक्ष (Vice President)', 'Vice President'))),
+                    DropdownMenuItem(value: 'Secretary', child: Text(AppStrings.tr('सचिव / कार्यवाह (Secretary)', 'Secretary'))),
+                    DropdownMenuItem(value: 'Treasurer', child: Text(AppStrings.tr('खजिनदार (Treasurer)', 'Treasurer'))),
+                    DropdownMenuItem(value: 'Committee Member', child: Text(AppStrings.tr('समिती सदस्य (Committee Member)', 'Committee Member'))),
+                    DropdownMenuItem(value: 'Volunteer', child: Text(AppStrings.tr('कार्यकर्ता / स्वयंसेवक (Volunteer)', 'Volunteer'))),
+                  ],
+                  onChanged: (val) {
+                    if (val != null) selectedRole = val;
+                  },
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: addressCtrl,
+                  decoration: InputDecoration(
+                    labelText: AppStrings.tr('पत्ता / गाव', 'Address'),
+                    prefixIcon: const Icon(Icons.home),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(
+              AppStrings.tr('रद्द करा', 'Cancel'),
+              style: const TextStyle(color: AppColors.textSecondary, fontWeight: FontWeight.bold),
+            ),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.infoBlue,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            ),
+            onPressed: () async {
+              if (nameCtrl.text.trim().isEmpty || mobileCtrl.text.trim().isEmpty) return;
+              final messenger = ScaffoldMessenger.of(context);
+              final updatedMember = member.copyWith(
+                fullName: nameCtrl.text.trim(),
+                role: selectedRole,
+                mobile: mobileCtrl.text.trim(),
+                address: addressCtrl.text.trim(),
+              );
+              Navigator.pop(ctx);
+              try {
+                await repository.updateMember(updatedMember);
+                if (mounted) {
+                  setState(() {});
+                  messenger.showSnackBar(
+                    SnackBar(
+                      content: Text(AppStrings.tr(
+                        'सदस्य माहिती यशस्वीरित्या अद्ययावत केली!',
+                        'Member updated successfully!',
+                      )),
+                      backgroundColor: AppColors.infoBlue,
+                    ),
+                  );
+                }
+              } catch (e) {
+                if (mounted) {
+                  messenger.showSnackBar(
+                    SnackBar(content: Text('Error updating member: $e')),
+                  );
+                }
+              }
+            },
+            child: Text(
+              AppStrings.tr('बदल सेव्ह करा', 'Save Changes'),
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _confirmDeleteMember(MemberModel member) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(AppStrings.tr('सदस्य काढून टाकायचा आहे का?', 'Delete Member?')),
+        content: Text(AppStrings.tr(
+          'आपण खात्रीपूर्वक "${member.fullName}" यांना यादीतून काढू इच्छिता का?',
+          'Are you sure you want to delete "${member.fullName}"?',
+        )),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(AppStrings.tr('नाही / रद्द करा', 'Cancel')),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.expenseRed, foregroundColor: Colors.white),
+            onPressed: () async {
+              Navigator.pop(ctx);
+              await repository.deleteMember(member.id);
+              if (mounted) {
+                setState(() {});
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(AppStrings.tr('सदस्य काढून टाकण्यात आला!', 'Member deleted!')),
+                    backgroundColor: AppColors.expenseRed,
+                  ),
+                );
+              }
+            },
+            child: Text(AppStrings.tr('काढून टाका', 'Delete')),
           ),
         ],
       ),
@@ -386,17 +560,16 @@ class _MembersScreenState extends State<MembersScreen> {
                                   icon: const Icon(Icons.edit_outlined, size: 18, color: AppColors.infoBlue),
                                   padding: EdgeInsets.zero,
                                   constraints: const BoxConstraints(),
-                                  onPressed: () {},
+                                  tooltip: AppStrings.tr('माहिती बदला', 'Edit'),
+                                  onPressed: () => _showEditMemberDialog(m),
                                 ),
                                 const SizedBox(width: 14),
                                 IconButton(
                                   icon: const Icon(Icons.delete_outline, size: 18, color: AppColors.expenseRed),
                                   padding: EdgeInsets.zero,
                                   constraints: const BoxConstraints(),
-                                  onPressed: () async {
-                                    await repository.deleteMember(m.id);
-                                    setState(() {});
-                                  },
+                                  tooltip: AppStrings.tr('काढून टाका', 'Delete'),
+                                  onPressed: () => _confirmDeleteMember(m),
                                 ),
                               ],
                             ),
@@ -413,13 +586,13 @@ class _MembersScreenState extends State<MembersScreen> {
                 scrollDirection: Axis.horizontal,
                 child: DataTable(
                   headingRowColor: WidgetStateProperty.all(const Color(0xFFF8FAFC)),
-                  columns: const [
-                    DataColumn(label: Text('Photo', style: TextStyle(fontWeight: FontWeight.bold))),
-                    DataColumn(label: Text('Name', style: TextStyle(fontWeight: FontWeight.bold))),
-                    DataColumn(label: Text('Role', style: TextStyle(fontWeight: FontWeight.bold))),
-                    DataColumn(label: Text('Mobile', style: TextStyle(fontWeight: FontWeight.bold))),
-                    DataColumn(label: Text('Status', style: TextStyle(fontWeight: FontWeight.bold))),
-                    DataColumn(label: Text('Action', style: TextStyle(fontWeight: FontWeight.bold))),
+                  columns: [
+                    DataColumn(label: Text(AppStrings.tr('फोटो', 'Photo'), style: const TextStyle(fontWeight: FontWeight.bold))),
+                    DataColumn(label: Text(AppStrings.tr('नाव', 'Name'), style: const TextStyle(fontWeight: FontWeight.bold))),
+                    DataColumn(label: Text(AppStrings.tr('पद / भूमिका', 'Role'), style: const TextStyle(fontWeight: FontWeight.bold))),
+                    DataColumn(label: Text(AppStrings.tr('मोबाईल', 'Mobile'), style: const TextStyle(fontWeight: FontWeight.bold))),
+                    DataColumn(label: Text(AppStrings.tr('स्थिती', 'Status'), style: const TextStyle(fontWeight: FontWeight.bold))),
+                    DataColumn(label: Text(AppStrings.tr('क्रिया', 'Action'), style: const TextStyle(fontWeight: FontWeight.bold))),
                   ],
                   rows: filteredMembers.map((m) {
                     return DataRow(
@@ -452,14 +625,13 @@ class _MembersScreenState extends State<MembersScreen> {
                             children: [
                               IconButton(
                                 icon: const Icon(Icons.edit, size: 18, color: AppColors.infoBlue),
-                                onPressed: () {},
+                                tooltip: AppStrings.tr('माहिती बदला', 'Edit'),
+                                onPressed: () => _showEditMemberDialog(m),
                               ),
                               IconButton(
                                 icon: const Icon(Icons.delete, size: 18, color: AppColors.expenseRed),
-                                onPressed: () async {
-                                  await repository.deleteMember(m.id);
-                                  setState(() {});
-                                },
+                                tooltip: AppStrings.tr('काढून टाका', 'Delete'),
+                                onPressed: () => _confirmDeleteMember(m),
                               ),
                             ],
                           ),

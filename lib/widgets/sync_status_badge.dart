@@ -124,6 +124,18 @@ class SyncStatusBadge extends StatelessWidget {
             ],
           ),
           actions: [
+            if (state.pendingCount > 0)
+              TextButton.icon(
+                onPressed: () async {
+                  Navigator.pop(ctx);
+                  await SyncService.instance.clearPendingQueue();
+                },
+                icon: const Icon(Icons.cleaning_services, size: 16, color: Colors.orange),
+                label: Text(
+                  AppStrings.tr('रांग स्वच्छ करा', 'Clear Queue'),
+                  style: const TextStyle(color: Colors.orange),
+                ),
+              ),
             TextButton(
               onPressed: () => Navigator.pop(ctx),
               child: Text(AppStrings.tr('बंद करा', 'Close')),

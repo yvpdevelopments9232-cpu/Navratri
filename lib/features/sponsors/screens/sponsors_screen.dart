@@ -68,12 +68,13 @@ class _SponsorsScreenState extends State<SponsorsScreen> {
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx), child: Text(AppStrings.tr('रद्द करा', 'Cancel'))),
           ElevatedButton(
-            onPressed: () {
+            onPressed: () async {
               final amt = double.tryParse(amountCtrl.text.trim()) ?? 0.0;
               if (nameCtrl.text.trim().isEmpty || amt <= 0) return;
-              repository.sponsors.add(
+              Navigator.pop(ctx);
+              await repository.addSponsor(
                 SponsorModel(
-                  id: DateTime.now().millisecondsSinceEpoch.toString(),
+                  id: '',
                   sponsorName: nameCtrl.text.trim(),
                   package: selectedPkg,
                   amount: amt,
@@ -81,8 +82,7 @@ class _SponsorsScreenState extends State<SponsorsScreen> {
                   status: 'Paid',
                 ),
               );
-              Navigator.pop(ctx);
-              setState(() {});
+              if (mounted) setState(() {});
             },
             child: Text(AppStrings.tr('जतन करा', 'Save Sponsor')),
           ),
@@ -90,6 +90,131 @@ class _SponsorsScreenState extends State<SponsorsScreen> {
       ),
     );
   }
+
+  void _showEditSponsorDialog(SponsorModel sponsor) {
+    final nameCtrl = TextEditingController(text: sponsor.sponsorName);
+    final amountCtrl = TextEditingController(text: sponsor.amount.toStringAsFixed(0));
+    final paidCtrl = TextEditingController(text: sponsor.paidAmount.toStringAsFixed(0));
+    String selectedPkg = sponsor.package;
+    String selectedStatus = sponsor.status;
+
+    final packages = ['Main Sponsor', 'Gold Sponsor', 'Silver Sponsor', 'Banner Sponsor', 'Event Sponsor'];
+    if (!packages.contains(selectedPkg)) selectedPkg = 'Main Sponsor';
+
+    final statuses = ['Paid', 'Pending', 'Partial'];
+    if (!statuses.contains(selectedStatus)) selectedStatus = 'Paid';
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setDlgState) => AlertDialog(
+          title: Row(
+            children: [
+              const Icon(Icons.edit_note, color: AppColors.infoBlue),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  AppStrings.tr('प्रायोजक माहिती बदला', 'Edit Sponsor'),
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 17),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+          content: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 450),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(controller: nameCtrl, decoration: InputDecoration(labelText: AppStrings.tr('प्रायोजक नाव *', 'Sponsor Name *'))),
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField<String>(
+                    value: selectedPkg,
+                    decoration: InputDecoration(labelText: AppStrings.tr('प्रायोजक पॅकेज', 'Sponsorship Package')),
+                    items: const [
+                      DropdownMenuItem(value: 'Main Sponsor', child: Text('Main Sponsor (मुख्य प्रायोजक)')),
+                      DropdownMenuItem(value: 'Gold Sponsor', child: Text('Gold Sponsor (सुवर्ण प्रायोजक)')),
+                      DropdownMenuItem(value: 'Silver Sponsor', child: Text('Silver Sponsor (रौप्य प्रायोजक)')),
+                      DropdownMenuItem(value: 'Banner Sponsor', child: Text('Banner Sponsor (बॅनर प्रायोजक)')),
+                      DropdownMenuItem(value: 'Event Sponsor', child: Text('Event Sponsor (कार्यक्रम प्रायोजक)')),
+                    ],
+                    onChanged: (val) {
+                      if (val != null) setDlgState(() => selectedPkg = val);
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(controller: amountCtrl, decoration: InputDecoration(labelText: AppStrings.tr('एकूण प्रायोजक रक्कम (₹) *', 'Total Amount (₹) *')), keyboardType: TextInputType.number),
+                  const SizedBox(height: 12),
+                  TextField(controller: paidCtrl, decoration: InputDecoration(labelText: AppStrings.tr('जमा रक्कम (₹)', 'Paid Amount (₹)')), keyboardType: TextInputType.number),
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField<String>(
+                    value: selectedStatus,
+                    decoration: InputDecoration(labelText: AppStrings.tr('स्थिती', 'Status')),
+                    items: [
+                      DropdownMenuItem(value: 'Paid', child: Text(AppStrings.tr('जमा (Paid)', 'Paid'))),
+                      DropdownMenuItem(value: 'Partial', child: Text(AppStrings.tr('अंशतः जमा (Partial)', 'Partial'))),
+                      DropdownMenuItem(value: 'Pending', child: Text(AppStrings.tr('प्रलंबित (Pending)', 'Pending'))),
+                    ],
+                    onChanged: (val) {
+                      if (val != null) setDlgState(() => selectedStatus = val);
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: Text(AppStrings.tr('रद्द करा', 'Cancel'))),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: AppColors.infoBlue, foregroundColor: Colors.white),
+              onPressed: () async {
+                final amt = double.tryParse(amountCtrl.text.trim()) ?? sponsor.amount;
+                final pAmt = double.tryParse(paidCtrl.text.trim()) ?? sponsor.paidAmount;
+                final updated = sponsor.copyWith(
+                  sponsorName: nameCtrl.text.trim().isEmpty ? sponsor.sponsorName : nameCtrl.text.trim(),
+                  package: selectedPkg,
+                  amount: amt,
+                  paidAmount: pAmt,
+                  status: selectedStatus,
+                );
+                Navigator.pop(ctx);
+                await repository.updateSponsor(updated);
+                if (mounted) setState(() {});
+              },
+              child: Text(AppStrings.tr('बदल सेव्ह करा', 'Save Changes')),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _confirmDeleteSponsor(SponsorModel sponsor) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(AppStrings.tr('प्रायोजक काढून टाकायचे आहेत का?', 'Delete Sponsor?')),
+        content: Text(AppStrings.tr(
+          'आपण खात्रीपूर्वक "${sponsor.sponsorName}" यांची नोंद काढून टाकू इच्छिता का?',
+          'Are you sure you want to delete sponsor "${sponsor.sponsorName}"?',
+        )),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(AppStrings.tr('नाही / रद्द करा', 'Cancel'))),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.expenseRed, foregroundColor: Colors.white),
+            onPressed: () async {
+              Navigator.pop(ctx);
+              await repository.deleteSponsor(sponsor.id);
+              if (mounted) setState(() {});
+            },
+            child: Text(AppStrings.tr('काढून टाका', 'Delete')),
+          ),
+        ],
+      ),
+    );
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -219,9 +344,27 @@ class _SponsorsScreenState extends State<SponsorsScreen> {
                               ),
                               child: Text(s.package, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600)),
                             ),
-                            Text(
-                              CurrencyFormatter.format(s.amount),
-                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppColors.successGreen),
+                            Row(
+                              children: [
+                                Text(
+                                  CurrencyFormatter.format(s.amount),
+                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppColors.successGreen),
+                                ),
+                                const SizedBox(width: 8),
+                                IconButton(
+                                  icon: const Icon(Icons.edit_outlined, size: 18, color: AppColors.infoBlue),
+                                  padding: EdgeInsets.zero,
+                                  constraints: const BoxConstraints(),
+                                  onPressed: () => _showEditSponsorDialog(s),
+                                ),
+                                const SizedBox(width: 6),
+                                IconButton(
+                                  icon: const Icon(Icons.delete_outline, size: 18, color: AppColors.expenseRed),
+                                  padding: EdgeInsets.zero,
+                                  constraints: const BoxConstraints(),
+                                  onPressed: () => _confirmDeleteSponsor(s),
+                                ),
+                              ],
                             ),
                           ],
                         ),
@@ -266,13 +409,13 @@ class _SponsorsScreenState extends State<SponsorsScreen> {
                         DataCell(
                           Row(
                             children: [
-                              IconButton(icon: const Icon(Icons.edit, size: 18, color: AppColors.infoBlue), onPressed: () {}),
                               IconButton(
-                                icon: const Icon(Icons.delete, size: 18, color: AppColors.expenseRed),
-                                onPressed: () {
-                                  repository.sponsors.removeWhere((i) => i.id == s.id);
-                                  setState(() {});
-                                },
+                                icon: const Icon(Icons.edit_outlined, size: 18, color: AppColors.infoBlue),
+                                onPressed: () => _showEditSponsorDialog(s),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.delete_outline, size: 18, color: AppColors.expenseRed),
+                                onPressed: () => _confirmDeleteSponsor(s),
                               ),
                             ],
                           ),

@@ -3,6 +3,7 @@ import '../../../core/localization/app_strings.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../models/all_models.dart';
 import '../../../repositories/mandal_repository.dart';
+import '../../../services/offline_db_helper.dart';
 import '../../../widgets/status_badge.dart';
 
 class VolunteersScreen extends StatefulWidget {
@@ -68,22 +69,131 @@ class _VolunteersScreenState extends State<VolunteersScreen> {
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx), child: Text(AppStrings.tr('रद्द करा', 'Cancel'))),
           ElevatedButton(
-            onPressed: () {
+            onPressed: () async {
               if (nameCtrl.text.trim().isEmpty || mobileCtrl.text.trim().isEmpty) return;
-              repository.volunteers.add(
-                VolunteerModel(
-                  id: DateTime.now().millisecondsSinceEpoch.toString(),
-                  code: 'VOL-0${repository.volunteers.length + 1}',
-                  name: nameCtrl.text.trim(),
-                  mobile: mobileCtrl.text.trim(),
-                  department: selectedDept,
-                  status: 'Active',
-                ),
+              final newVol = VolunteerModel(
+                id: OfflineDbHelper.generateId(),
+                code: 'VOL-${(DateTime.now().millisecondsSinceEpoch % 900000 + 100000)}',
+                name: nameCtrl.text.trim(),
+                mobile: mobileCtrl.text.trim(),
+                department: selectedDept,
+                status: 'Active',
               );
               Navigator.pop(ctx);
+              await repository.addVolunteer(newVol);
               setState(() {});
             },
             child: Text(AppStrings.tr('जतन करा', 'Save Volunteer')),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showEditVolunteerDialog(VolunteerModel volunteer) {
+    final nameCtrl = TextEditingController(text: volunteer.name);
+    final mobileCtrl = TextEditingController(text: volunteer.mobile);
+    String selectedDept = volunteer.department;
+    String selectedStatus = volunteer.status;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Row(
+          children: [
+            const Icon(Icons.edit, color: AppColors.infoBlue),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                AppStrings.tr('स्वयंसेवक माहिती बदला', 'Edit Volunteer'),
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 17),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+        content: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 450),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(controller: nameCtrl, decoration: InputDecoration(labelText: AppStrings.tr('पूर्ण नाव *', 'Full Name *'))),
+                const SizedBox(height: 12),
+                TextField(controller: mobileCtrl, decoration: InputDecoration(labelText: AppStrings.tr('मोबाईल नंबर *', 'Mobile Number *')), keyboardType: TextInputType.phone),
+                const SizedBox(height: 12),
+                DropdownButtonFormField<String>(
+                  initialValue: selectedDept,
+                  decoration: InputDecoration(labelText: AppStrings.tr('नेमून दिलेला विभाग / जबाबदारी', 'Assigned Department')),
+                  items: const [
+                    DropdownMenuItem(value: 'Security', child: Text('Security (सुरक्षा व गर्दी नियंत्रण)')),
+                    DropdownMenuItem(value: 'Medical', child: Text('Medical (वैद्यकीय मदत)')),
+                    DropdownMenuItem(value: 'Decoration', child: Text('Decoration (सजावट व्यवस्था)')),
+                    DropdownMenuItem(value: 'Food', child: Text('Food (महाप्रसाद वाटप)')),
+                    DropdownMenuItem(value: 'Parking', child: Text('Parking (वाहनतळ व्यवस्था)')),
+                    DropdownMenuItem(value: 'Crowd Management', child: Text('Crowd Management (रांग व्यवस्थापन)')),
+                  ],
+                  onChanged: (val) {
+                    if (val != null) selectedDept = val;
+                  },
+                ),
+                const SizedBox(height: 12),
+                DropdownButtonFormField<String>(
+                  initialValue: selectedStatus,
+                  decoration: InputDecoration(labelText: AppStrings.tr('स्थिती', 'Status')),
+                  items: ['Active', 'On Duty', 'Inactive']
+                      .map((s) => DropdownMenuItem(value: s, child: Text(s)))
+                      .toList(),
+                  onChanged: (val) {
+                    if (val != null) selectedStatus = val;
+                  },
+                ),
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(AppStrings.tr('रद्द करा', 'Cancel'))),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.infoBlue, foregroundColor: Colors.white),
+            onPressed: () async {
+              if (nameCtrl.text.trim().isEmpty || mobileCtrl.text.trim().isEmpty) return;
+              final updated = volunteer.copyWith(
+                name: nameCtrl.text.trim(),
+                mobile: mobileCtrl.text.trim(),
+                department: selectedDept,
+                status: selectedStatus,
+              );
+              Navigator.pop(ctx);
+              await repository.updateVolunteer(updated);
+              setState(() {});
+            },
+            child: Text(AppStrings.tr('बदल सेव्ह करा', 'Save Changes')),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _confirmDeleteVolunteer(VolunteerModel volunteer) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(AppStrings.tr('स्वयंसेवक काढून टाकायचा आहे का?', 'Delete Volunteer?')),
+        content: Text(AppStrings.tr(
+          'आपण खात्रीपूर्वक "${volunteer.name}" यांना यादीतून काढू इच्छिता का?',
+          'Are you sure you want to delete "${volunteer.name}"?',
+        )),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(AppStrings.tr('नाही / रद्द करा', 'Cancel'))),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.expenseRed, foregroundColor: Colors.white),
+            onPressed: () async {
+              Navigator.pop(ctx);
+              await repository.deleteVolunteer(volunteer.id);
+              if (mounted) setState(() {});
+            },
+            child: Text(AppStrings.tr('काढून टाका', 'Delete')),
           ),
         ],
       ),
@@ -230,13 +340,17 @@ class _VolunteersScreenState extends State<VolunteersScreen> {
                                 Text('📞 ${v.mobile}', style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
                                 const SizedBox(width: 8),
                                 IconButton(
-                                  icon: const Icon(Icons.delete, size: 18, color: AppColors.expenseRed),
+                                  icon: const Icon(Icons.edit_outlined, size: 18, color: AppColors.infoBlue),
                                   padding: EdgeInsets.zero,
                                   constraints: const BoxConstraints(),
-                                  onPressed: () {
-                                    repository.volunteers.removeWhere((i) => i.id == v.id);
-                                    setState(() {});
-                                  },
+                                  onPressed: () => _showEditVolunteerDialog(v),
+                                ),
+                                const SizedBox(width: 6),
+                                IconButton(
+                                  icon: const Icon(Icons.delete_outline, size: 18, color: AppColors.expenseRed),
+                                  padding: EdgeInsets.zero,
+                                  constraints: const BoxConstraints(),
+                                  onPressed: () => _confirmDeleteVolunteer(v),
                                 ),
                               ],
                             ),
@@ -293,13 +407,13 @@ class _VolunteersScreenState extends State<VolunteersScreen> {
                         DataCell(
                           Row(
                             children: [
-                              IconButton(icon: const Icon(Icons.edit, size: 18, color: AppColors.infoBlue), onPressed: () {}),
                               IconButton(
-                                icon: const Icon(Icons.delete, size: 18, color: AppColors.expenseRed),
-                                onPressed: () {
-                                  repository.volunteers.removeWhere((i) => i.id == v.id);
-                                  setState(() {});
-                                },
+                                icon: const Icon(Icons.edit_outlined, size: 18, color: AppColors.infoBlue),
+                                onPressed: () => _showEditVolunteerDialog(v),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.delete_outline, size: 18, color: AppColors.expenseRed),
+                                onPressed: () => _confirmDeleteVolunteer(v),
                               ),
                             ],
                           ),

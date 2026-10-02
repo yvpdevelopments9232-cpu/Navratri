@@ -26,7 +26,7 @@ class _AartiScreenState extends State<AartiScreen> {
           children: [
             Icon(Icons.flare, color: AppColors.brightGold),
             SizedBox(width: 8),
-            Text('Schedule Daily Aarti', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+            Text('आरती वेळ व यजमान जोडा', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
           ],
         ),
         content: SizedBox(
@@ -34,33 +34,110 @@ class _AartiScreenState extends State<AartiScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: 'Aarti Name (e.g. Maha Aarti)')),
+              TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: 'आरतीचे नाव (उदा. महाआरती, सकाळची आरती)')),
               const SizedBox(height: 12),
-              TextField(controller: dateCtrl, decoration: const InputDecoration(labelText: 'Date (DD MMM YYYY)')),
+              TextField(controller: dateCtrl, decoration: const InputDecoration(labelText: 'दिनांक (उदा. 23 Sep 2026)')),
               const SizedBox(height: 12),
-              TextField(controller: timeCtrl, decoration: const InputDecoration(labelText: 'Aarti Time (e.g. 7:30 PM)')),
+              TextField(controller: timeCtrl, decoration: const InputDecoration(labelText: 'वेळ (उदा. 7:30 PM)')),
               const SizedBox(height: 12),
-              TextField(controller: leadCtrl, decoration: const InputDecoration(labelText: 'Lead Person / Pooja Host')),
+              TextField(controller: leadCtrl, decoration: const InputDecoration(labelText: 'आरती यजमान / प्रमुख व्यक्ती')),
             ],
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('रद्द करा')),
           ElevatedButton(
-            onPressed: () {
-              repository.aartis.add(
+            onPressed: () async {
+              if (nameCtrl.text.trim().isEmpty) return;
+              Navigator.pop(ctx);
+              await repository.addAarti(
                 AartiModel(
-                  id: DateTime.now().millisecondsSinceEpoch.toString(),
+                  id: '',
                   aartiName: nameCtrl.text.trim(),
                   date: dateCtrl.text.trim(),
                   time: timeCtrl.text.trim(),
                   leadPerson: leadCtrl.text.trim(),
                 ),
               );
-              Navigator.pop(ctx);
-              setState(() {});
+              if (mounted) setState(() {});
             },
-            child: const Text('Save Aarti'),
+            child: const Text('जतन करा'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showEditAartiDialog(AartiModel aarti) {
+    final nameCtrl = TextEditingController(text: aarti.aartiName);
+    final dateCtrl = TextEditingController(text: aarti.date);
+    final timeCtrl = TextEditingController(text: aarti.time);
+    final leadCtrl = TextEditingController(text: aarti.leadPerson);
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.edit_note, color: AppColors.infoBlue),
+            SizedBox(width: 8),
+            Text('आरती तपशील बदला', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+          ],
+        ),
+        content: SizedBox(
+          width: 450,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: 'आरतीचे नाव')),
+              const SizedBox(height: 12),
+              TextField(controller: dateCtrl, decoration: const InputDecoration(labelText: 'दिनांक')),
+              const SizedBox(height: 12),
+              TextField(controller: timeCtrl, decoration: const InputDecoration(labelText: 'वेळ')),
+              const SizedBox(height: 12),
+              TextField(controller: leadCtrl, decoration: const InputDecoration(labelText: 'आरती यजमान / प्रमुख व्यक्ती')),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('रद्द करा')),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.infoBlue, foregroundColor: Colors.white),
+            onPressed: () async {
+              if (nameCtrl.text.trim().isEmpty) return;
+              final updated = aarti.copyWith(
+                aartiName: nameCtrl.text.trim(),
+                date: dateCtrl.text.trim(),
+                time: timeCtrl.text.trim(),
+                leadPerson: leadCtrl.text.trim(),
+              );
+              Navigator.pop(ctx);
+              await repository.updateAarti(updated);
+              if (mounted) setState(() {});
+            },
+            child: const Text('बदल सेव्ह करा'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _confirmDeleteAarti(AartiModel aarti) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('आरती नोंद काढून टाकायची आहे का?'),
+        content: Text('आपण खात्रीपूर्वक "${aarti.aartiName}" यांची नोंद काढून टाकू इच्छिता का?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('नाही / रद्द करा')),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.expenseRed, foregroundColor: Colors.white),
+            onPressed: () async {
+              Navigator.pop(ctx);
+              await repository.deleteAarti(aarti.id);
+              if (mounted) setState(() {});
+            },
+            child: const Text('काढून टाका'),
           ),
         ],
       ),
@@ -139,13 +216,13 @@ class _AartiScreenState extends State<AartiScreen> {
                       DataCell(
                         Row(
                           children: [
-                            IconButton(icon: const Icon(Icons.edit, size: 18, color: AppColors.infoBlue), onPressed: () {}),
                             IconButton(
-                              icon: const Icon(Icons.delete, size: 18, color: AppColors.expenseRed),
-                              onPressed: () {
-                                repository.aartis.removeWhere((i) => i.id == a.id);
-                                setState(() {});
-                              },
+                              icon: const Icon(Icons.edit_outlined, size: 18, color: AppColors.infoBlue),
+                              onPressed: () => _showEditAartiDialog(a),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.delete_outline, size: 18, color: AppColors.expenseRed),
+                              onPressed: () => _confirmDeleteAarti(a),
                             ),
                           ],
                         ),

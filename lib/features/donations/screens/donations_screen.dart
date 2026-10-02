@@ -387,6 +387,283 @@ class _DonationsScreenState extends State<DonationsScreen> {
     );
   }
 
+  void _showEditDonationDialog(DonationModel donation) {
+    final dateCtrl = TextEditingController(text: donation.date);
+    final nameCtrl = TextEditingController(text: donation.donorName);
+    final mobileCtrl = TextEditingController(text: donation.mobile);
+    final addressCtrl = TextEditingController(text: donation.address);
+    final amountCtrl = TextEditingController(text: donation.amount.toStringAsFixed(0));
+    final notesCtrl = TextEditingController(text: donation.notes ?? '');
+    String selectedMode = donation.paymentMode;
+    String selectedPurpose = donation.purpose;
+    String selectedCollector = donation.collectorName;
+
+    final collectorList = [
+      'Sonu nikole',
+      'Rajesh Patel',
+      'Sunil Mehta',
+      'Pooja Sharma',
+      'Anil Desai',
+      'Neha Joshi',
+      if (repository.mandalProfile.authorizedSignatoryName.isNotEmpty)
+        repository.mandalProfile.authorizedSignatoryName,
+    ].toSet().toList();
+
+    if (!collectorList.contains(selectedCollector)) {
+      collectorList.add(selectedCollector);
+    }
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setModalState) {
+          final isMobileDialog = MediaQuery.of(context).size.width < 600;
+
+          Widget buildFieldRow(Widget left, Widget right) {
+            if (isMobileDialog) {
+              return Column(
+                children: [
+                  left,
+                  const SizedBox(height: 12),
+                  right,
+                ],
+              );
+            }
+            return Row(
+              children: [
+                Expanded(child: left),
+                const SizedBox(width: 12),
+                Expanded(child: right),
+              ],
+            );
+          }
+
+          return AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            title: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(color: AppColors.infoBlue.withAlpha(20), shape: BoxShape.circle),
+                  child: const Icon(Icons.edit, color: AppColors.infoBlue, size: 20),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    '${AppStrings.tr('देणगी पावती बदला', 'Edit Donation')} (${donation.receiptNumber})',
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+            content: SizedBox(
+              width: 520,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    buildFieldRow(
+                      TextField(
+                        controller: dateCtrl,
+                        decoration: InputDecoration(
+                          labelText: AppStrings.tr('तारीख *', 'Date *'),
+                          prefixIcon: const Icon(Icons.calendar_today),
+                        ),
+                      ),
+                      TextField(
+                        controller: amountCtrl,
+                        decoration: InputDecoration(
+                          labelText: AppStrings.tr('रक्कम (₹) *', 'Amount (₹) *'),
+                          prefixIcon: const Icon(Icons.currency_rupee),
+                        ),
+                        keyboardType: TextInputType.number,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    buildFieldRow(
+                      TextField(
+                        controller: nameCtrl,
+                        decoration: InputDecoration(
+                          labelText: AppStrings.tr('देणगीदाराचे नाव *', 'Donor Name *'),
+                          prefixIcon: const Icon(Icons.person),
+                        ),
+                      ),
+                      TextField(
+                        controller: mobileCtrl,
+                        decoration: InputDecoration(
+                          labelText: AppStrings.tr('मोबाईल नंबर', 'Mobile Number'),
+                          prefixIcon: const Icon(Icons.phone),
+                        ),
+                        keyboardType: TextInputType.phone,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: addressCtrl,
+                      decoration: InputDecoration(
+                        labelText: AppStrings.tr('पत्ता / गाव', 'Address'),
+                        prefixIcon: const Icon(Icons.location_on),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    buildFieldRow(
+                      DropdownButtonFormField<String>(
+                        initialValue: selectedMode,
+                        isExpanded: true,
+                        decoration: InputDecoration(
+                          labelText: AppStrings.tr('पेमेंट पद्धत', 'Payment Mode'),
+                          prefixIcon: const Icon(Icons.payments),
+                        ),
+                        items: ['Cash', 'UPI / QR', 'Bank Transfer', 'Cheque']
+                            .map((m) => DropdownMenuItem(value: m, child: Text(m)))
+                            .toList(),
+                        onChanged: (val) {
+                          if (val != null) setModalState(() => selectedMode = val);
+                        },
+                      ),
+                      DropdownButtonFormField<String>(
+                        initialValue: selectedPurpose,
+                        isExpanded: true,
+                        decoration: InputDecoration(
+                          labelText: AppStrings.tr('हेतू / कारण', 'Purpose'),
+                          prefixIcon: const Icon(Icons.category),
+                        ),
+                        items: [
+                          'सदस्य वर्गणी (Member Contribution)',
+                          'Festival Donation',
+                          'Maha Aarti',
+                          'Garba Pass',
+                          'Prasad Seva',
+                          'General',
+                        ].map((p) => DropdownMenuItem(value: p, child: Text(p, overflow: TextOverflow.ellipsis))).toList(),
+                        onChanged: (val) {
+                          if (val != null) setModalState(() => selectedPurpose = val);
+                        },
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    DropdownButtonFormField<String>(
+                      initialValue: selectedCollector,
+                      isExpanded: true,
+                      decoration: InputDecoration(
+                        labelText: AppStrings.tr('स्वीकारकर्ता (Collector)', 'Collector'),
+                        prefixIcon: const Icon(Icons.badge),
+                      ),
+                      items: collectorList
+                          .map((c) => DropdownMenuItem(value: c, child: Text(c, overflow: TextOverflow.ellipsis)))
+                          .toList(),
+                      onChanged: (val) {
+                        if (val != null) selectedCollector = val;
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: notesCtrl,
+                      decoration: InputDecoration(
+                        labelText: AppStrings.tr('विशेष नोंद / शेरा', 'Notes'),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: Text(
+                  AppStrings.tr('रद्द करा', 'Cancel'),
+                  style: const TextStyle(color: AppColors.textSecondary, fontWeight: FontWeight.bold),
+                ),
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.infoBlue,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                ),
+                onPressed: () async {
+                  final amt = double.tryParse(amountCtrl.text.trim()) ?? 0.0;
+                  if (nameCtrl.text.trim().isEmpty || amt <= 0) return;
+
+                  final messenger = ScaffoldMessenger.of(context);
+                  final updatedDonation = donation.copyWith(
+                    date: dateCtrl.text.trim(),
+                    donorName: nameCtrl.text.trim(),
+                    mobile: mobileCtrl.text.trim(),
+                    address: addressCtrl.text.trim(),
+                    amount: amt,
+                    paymentMode: selectedMode,
+                    purpose: selectedPurpose,
+                    collectorName: selectedCollector,
+                    notes: notesCtrl.text.trim(),
+                  );
+
+                  Navigator.pop(ctx);
+                  await repository.updateDonation(updatedDonation);
+
+                  if (mounted) {
+                    setState(() {});
+                    messenger.showSnackBar(
+                      SnackBar(
+                        content: Text(AppStrings.tr(
+                          'पावती ${donation.receiptNumber} यशस्वीरित्या अद्ययावत केली!',
+                          'Receipt ${donation.receiptNumber} updated successfully!',
+                        )),
+                        backgroundColor: AppColors.infoBlue,
+                      ),
+                    );
+                  }
+                },
+                child: Text(
+                  AppStrings.tr('बदल सेव्ह करा', 'Save Changes'),
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  void _confirmDeleteDonation(DonationModel donation) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(AppStrings.tr('देणगी पावती काढून टाकायची आहे का?', 'Delete Donation Receipt?')),
+        content: Text(AppStrings.tr(
+          'आपण खात्रीपूर्वक पावती क्र. "${donation.receiptNumber}" (${donation.donorName} - ₹${donation.amount.toInt()}) काढून टाकू इच्छिता का?',
+          'Are you sure you want to delete receipt "${donation.receiptNumber}" (${donation.donorName} - ₹${donation.amount.toInt()})?',
+        )),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(AppStrings.tr('नाही / रद्द करा', 'Cancel')),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.expenseRed, foregroundColor: Colors.white),
+            onPressed: () async {
+              Navigator.pop(ctx);
+              await repository.deleteDonation(donation.id);
+              if (mounted) {
+                setState(() {});
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(AppStrings.tr('देणगी नोंद यशस्वीरित्या काढून टाकली!', 'Donation receipt deleted successfully!')),
+                    backgroundColor: AppColors.expenseRed,
+                  ),
+                );
+              }
+            },
+            child: Text(AppStrings.tr('काढून टाका', 'Delete')),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
@@ -568,15 +845,35 @@ class _DonationsScreenState extends State<DonationsScreen> {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text('${d.date} • ${d.paymentMode} • ${d.purpose}', style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
-                            IconButton(
-                              icon: const Icon(Icons.print, size: 20, color: AppColors.primaryMaroon),
-                              padding: EdgeInsets.zero,
-                              constraints: const BoxConstraints(),
-                              tooltip: 'Print Receipt',
-                              onPressed: () => PdfService.printDonationReceipt(
-                                mandal: repository.mandalProfile,
-                                donation: d,
-                              ),
+                            Row(
+                              children: [
+                                IconButton(
+                                  icon: const Icon(Icons.print, size: 20, color: AppColors.primaryMaroon),
+                                  padding: EdgeInsets.zero,
+                                  constraints: const BoxConstraints(),
+                                  tooltip: AppStrings.tr('पावती प्रिंट करा', 'Print Receipt'),
+                                  onPressed: () => PdfService.printDonationReceipt(
+                                    mandal: repository.mandalProfile,
+                                    donation: d,
+                                  ),
+                                ),
+                                const SizedBox(width: 14),
+                                IconButton(
+                                  icon: const Icon(Icons.edit_outlined, size: 20, color: AppColors.infoBlue),
+                                  padding: EdgeInsets.zero,
+                                  constraints: const BoxConstraints(),
+                                  tooltip: AppStrings.tr('बदला', 'Edit'),
+                                  onPressed: () => _showEditDonationDialog(d),
+                                ),
+                                const SizedBox(width: 14),
+                                IconButton(
+                                  icon: const Icon(Icons.delete_outline, size: 20, color: AppColors.expenseRed),
+                                  padding: EdgeInsets.zero,
+                                  constraints: const BoxConstraints(),
+                                  tooltip: AppStrings.tr('काढून टाका', 'Delete'),
+                                  onPressed: () => _confirmDeleteDonation(d),
+                                ),
+                              ],
                             ),
                           ],
                         ),
@@ -599,7 +896,7 @@ class _DonationsScreenState extends State<DonationsScreen> {
                     DataColumn(label: Text(AppStrings.tr('पेमेंट पद्धत', 'Payment Mode'), style: const TextStyle(fontWeight: FontWeight.bold))),
                     DataColumn(label: Text(AppStrings.tr('हेतू', 'Purpose'), style: const TextStyle(fontWeight: FontWeight.bold))),
                     DataColumn(label: Text(AppStrings.tr('स्वीकारकर्ता', 'Collector'), style: const TextStyle(fontWeight: FontWeight.bold))),
-                    DataColumn(label: Text(AppStrings.tr('पावती', 'Action'), style: const TextStyle(fontWeight: FontWeight.bold))),
+                    DataColumn(label: Text(AppStrings.tr('क्रिया', 'Action'), style: const TextStyle(fontWeight: FontWeight.bold))),
                   ],
                   rows: filteredDonations.map((d) {
                     return DataRow(
@@ -627,13 +924,28 @@ class _DonationsScreenState extends State<DonationsScreen> {
                         DataCell(Text(d.purpose)),
                         DataCell(Text(d.collectorName)),
                         DataCell(
-                          IconButton(
-                            icon: const Icon(Icons.print, size: 18, color: AppColors.primaryMaroon),
-                            tooltip: 'Print Donation Receipt PDF',
-                            onPressed: () => PdfService.printDonationReceipt(
-                              mandal: repository.mandalProfile,
-                              donation: d,
-                            ),
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                icon: const Icon(Icons.print, size: 18, color: AppColors.primaryMaroon),
+                                tooltip: AppStrings.tr('पावती प्रिंट करा', 'Print Receipt'),
+                                onPressed: () => PdfService.printDonationReceipt(
+                                  mandal: repository.mandalProfile,
+                                  donation: d,
+                                ),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.edit, size: 18, color: AppColors.infoBlue),
+                                tooltip: AppStrings.tr('बदला', 'Edit'),
+                                onPressed: () => _showEditDonationDialog(d),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.delete, size: 18, color: AppColors.expenseRed),
+                                tooltip: AppStrings.tr('काढून टाका', 'Delete'),
+                                onPressed: () => _confirmDeleteDonation(d),
+                              ),
+                            ],
                           ),
                         ),
                       ],

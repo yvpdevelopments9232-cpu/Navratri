@@ -3,6 +3,7 @@ import '../../../core/localization/app_strings.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../models/all_models.dart';
 import '../../../repositories/mandal_repository.dart';
+import '../../../services/offline_db_helper.dart';
 import '../../../widgets/status_badge.dart';
 
 class EventsScreen extends StatefulWidget {
@@ -64,23 +65,131 @@ class _EventsScreenState extends State<EventsScreen> {
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx), child: Text(AppStrings.tr('रद्द करा', 'Cancel'))),
           ElevatedButton(
-            onPressed: () {
+            onPressed: () async {
               if (nameCtrl.text.trim().isEmpty) return;
-              repository.events.add(
-                EventModel(
-                  id: DateTime.now().millisecondsSinceEpoch.toString(),
-                  eventName: nameCtrl.text.trim(),
-                  date: dateCtrl.text.trim(),
-                  startTime: startCtrl.text.trim(),
-                  endTime: endCtrl.text.trim(),
-                  venue: venueCtrl.text.trim(),
-                  status: 'Upcoming',
-                ),
+              final newEvent = EventModel(
+                id: OfflineDbHelper.generateId(),
+                eventName: nameCtrl.text.trim(),
+                date: dateCtrl.text.trim(),
+                startTime: startCtrl.text.trim(),
+                endTime: endCtrl.text.trim(),
+                venue: venueCtrl.text.trim(),
+                status: 'Upcoming',
               );
               Navigator.pop(ctx);
+              await repository.addEvent(newEvent);
               setState(() {});
             },
             child: Text(AppStrings.tr('जतन करा', 'Save Event')),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showEditEventDialog(EventModel event) {
+    final nameCtrl = TextEditingController(text: event.eventName);
+    final dateCtrl = TextEditingController(text: event.date);
+    final venueCtrl = TextEditingController(text: event.venue);
+    final startCtrl = TextEditingController(text: event.startTime);
+    final endCtrl = TextEditingController(text: event.endTime);
+    String selectedStatus = event.status;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Row(
+          children: [
+            const Icon(Icons.edit, color: AppColors.infoBlue),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                AppStrings.tr('कार्यक्रम बदला', 'Edit Event'),
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 17),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+        content: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 450),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(controller: nameCtrl, decoration: InputDecoration(labelText: AppStrings.tr('कार्यक्रमाचे नाव *', 'Event Name *'))),
+                const SizedBox(height: 12),
+                TextField(controller: dateCtrl, decoration: InputDecoration(labelText: AppStrings.tr('तारीख (उदा. 20 Sep 2026)', 'Date (e.g. 20 Sep 2026)'))),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(child: TextField(controller: startCtrl, decoration: InputDecoration(labelText: AppStrings.tr('सुरू होण्याची वेळ', 'Start Time')))),
+                    const SizedBox(width: 12),
+                    Expanded(child: TextField(controller: endCtrl, decoration: InputDecoration(labelText: AppStrings.tr('समाप्ती वेळ', 'End Time')))),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                TextField(controller: venueCtrl, decoration: InputDecoration(labelText: AppStrings.tr('ठिकाण', 'Venue'))),
+                const SizedBox(height: 12),
+                DropdownButtonFormField<String>(
+                  initialValue: selectedStatus,
+                  isExpanded: true,
+                  decoration: InputDecoration(labelText: AppStrings.tr('स्थिती', 'Status')),
+                  items: ['Upcoming', 'Completed', 'Live']
+                      .map((s) => DropdownMenuItem(value: s, child: Text(s)))
+                      .toList(),
+                  onChanged: (val) {
+                    if (val != null) selectedStatus = val;
+                  },
+                ),
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(AppStrings.tr('रद्द करा', 'Cancel'))),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.infoBlue, foregroundColor: Colors.white),
+            onPressed: () async {
+              if (nameCtrl.text.trim().isEmpty) return;
+              final updated = event.copyWith(
+                eventName: nameCtrl.text.trim(),
+                date: dateCtrl.text.trim(),
+                startTime: startCtrl.text.trim(),
+                endTime: endCtrl.text.trim(),
+                venue: venueCtrl.text.trim(),
+                status: selectedStatus,
+              );
+              Navigator.pop(ctx);
+              await repository.updateEvent(updated);
+              setState(() {});
+            },
+            child: Text(AppStrings.tr('बदल सेव्ह करा', 'Save Changes')),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _confirmDeleteEvent(EventModel event) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(AppStrings.tr('कार्यक्रम काढून टाकायचा आहे का?', 'Delete Event?')),
+        content: Text(AppStrings.tr(
+          'आपण खात्रीपूर्वक "${event.eventName}" कार्यक्रम काढून टाकू इच्छिता का?',
+          'Are you sure you want to delete event "${event.eventName}"?',
+        )),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(AppStrings.tr('नाही / रद्द करा', 'Cancel'))),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.expenseRed, foregroundColor: Colors.white),
+            onPressed: () async {
+              Navigator.pop(ctx);
+              await repository.deleteEvent(event.id);
+              if (mounted) setState(() {});
+            },
+            child: Text(AppStrings.tr('काढून टाका', 'Delete')),
           ),
         ],
       ),
@@ -215,14 +324,24 @@ class _EventsScreenState extends State<EventsScreen> {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text('⏰ ${e.startTime} - ${e.endTime} | 📍 ${e.venue}', style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
-                            IconButton(
-                              icon: const Icon(Icons.delete, size: 18, color: AppColors.expenseRed),
-                              padding: EdgeInsets.zero,
-                              constraints: const BoxConstraints(),
-                              onPressed: () {
-                                repository.events.removeWhere((i) => i.id == e.id);
-                                setState(() {});
-                              },
+                            Row(
+                              children: [
+                                IconButton(
+                                  icon: const Icon(Icons.edit_outlined, size: 18, color: AppColors.infoBlue),
+                                  padding: EdgeInsets.zero,
+                                  constraints: const BoxConstraints(),
+                                  tooltip: AppStrings.tr('माहिती बदला', 'Edit'),
+                                  onPressed: () => _showEditEventDialog(e),
+                                ),
+                                const SizedBox(width: 14),
+                                IconButton(
+                                  icon: const Icon(Icons.delete_outline, size: 18, color: AppColors.expenseRed),
+                                  padding: EdgeInsets.zero,
+                                  constraints: const BoxConstraints(),
+                                  tooltip: AppStrings.tr('काढून टाका', 'Delete'),
+                                  onPressed: () => _confirmDeleteEvent(e),
+                                ),
+                              ],
                             ),
                           ],
                         ),
@@ -255,13 +374,15 @@ class _EventsScreenState extends State<EventsScreen> {
                         DataCell(
                           Row(
                             children: [
-                              IconButton(icon: const Icon(Icons.edit, size: 18, color: AppColors.infoBlue), onPressed: () {}),
+                              IconButton(
+                                icon: const Icon(Icons.edit, size: 18, color: AppColors.infoBlue),
+                                tooltip: AppStrings.tr('माहिती बदला', 'Edit'),
+                                onPressed: () => _showEditEventDialog(e),
+                              ),
                               IconButton(
                                 icon: const Icon(Icons.delete, size: 18, color: AppColors.expenseRed),
-                                onPressed: () {
-                                  repository.events.removeWhere((i) => i.id == e.id);
-                                  setState(() {});
-                                },
+                                tooltip: AppStrings.tr('काढून टाका', 'Delete'),
+                                onPressed: () => _confirmDeleteEvent(e),
                               ),
                             ],
                           ),

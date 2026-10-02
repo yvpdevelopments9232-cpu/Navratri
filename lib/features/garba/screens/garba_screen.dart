@@ -136,11 +136,12 @@ class _GarbaScreenState extends State<GarbaScreen> {
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx), child: Text(AppStrings.tr('रद्द करा', 'Cancel'))),
           ElevatedButton(
-            onPressed: () {
+            onPressed: () async {
               if (nameCtrl.text.trim().isEmpty || mobileCtrl.text.trim().isEmpty) return;
+              final uniqueReg = 'REG-${(DateTime.now().millisecondsSinceEpoch % 9000 + 1000)}';
               final newP = GarbaParticipantModel(
-                id: DateTime.now().millisecondsSinceEpoch.toString(),
-                regNumber: 'REG-${100 + repository.participants.length + 1}',
+                id: '',
+                regNumber: uniqueReg,
                 name: nameCtrl.text.trim(),
                 mobile: mobileCtrl.text.trim(),
                 age: int.tryParse(ageCtrl.text.trim()) ?? 20,
@@ -148,9 +149,9 @@ class _GarbaScreenState extends State<GarbaScreen> {
                 amount: 200,
                 status: 'Active',
               );
-              repository.participants.insert(0, newP);
               Navigator.pop(ctx);
-              setState(() {});
+              await repository.addParticipant(newP);
+              if (mounted) setState(() {});
               _showPassModal(newP);
             },
             child: Text(AppStrings.tr('नोंदणी करा व पास द्या', 'Register & Generate Pass')),
@@ -159,6 +160,133 @@ class _GarbaScreenState extends State<GarbaScreen> {
       ),
     );
   }
+
+  void _showEditParticipantDialog(GarbaParticipantModel participant) {
+    final nameCtrl = TextEditingController(text: participant.name);
+    final mobileCtrl = TextEditingController(text: participant.mobile);
+    final ageCtrl = TextEditingController(text: participant.age.toString());
+    final feeCtrl = TextEditingController(text: participant.amount.toStringAsFixed(0));
+    String selectedGender = ['M', 'F'].contains(participant.gender) ? participant.gender : 'F';
+    String selectedStatus = participant.status;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setDlgState) => AlertDialog(
+          title: Row(
+            children: [
+              const Icon(Icons.edit_note, color: AppColors.infoBlue),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  AppStrings.tr('स्पर्धक / पास माहिती बदला', 'Edit Participant / Pass'),
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 17),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+          content: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 450),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(controller: nameCtrl, decoration: InputDecoration(labelText: AppStrings.tr('स्पर्धक / पासधारकाचे नाव *', 'Participant Name *'))),
+                  const SizedBox(height: 12),
+                  TextField(controller: mobileCtrl, decoration: InputDecoration(labelText: AppStrings.tr('मोबाईल क्रमांक *', 'Mobile Number *')), keyboardType: TextInputType.phone),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(child: TextField(controller: ageCtrl, decoration: InputDecoration(labelText: AppStrings.tr('वय', 'Age')), keyboardType: TextInputType.number)),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: DropdownButtonFormField<String>(
+                          value: selectedGender,
+                          decoration: InputDecoration(labelText: AppStrings.tr('लिंग', 'Gender')),
+                          items: const [
+                            DropdownMenuItem(value: 'F', child: Text('Female (महिला)')),
+                            DropdownMenuItem(value: 'M', child: Text('Male (पुरुष)')),
+                          ],
+                          onChanged: (val) {
+                            if (val != null) setDlgState(() => selectedGender = val);
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(controller: feeCtrl, decoration: InputDecoration(labelText: AppStrings.tr('प्रवेश शुल्क (₹)', 'Registration Fee (₹)')), keyboardType: TextInputType.number),
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField<String>(
+                    value: ['Active', 'Cancelled', 'Used'].contains(selectedStatus) ? selectedStatus : 'Active',
+                    decoration: InputDecoration(labelText: AppStrings.tr('स्थिती', 'Status')),
+                    items: [
+                      DropdownMenuItem(value: 'Active', child: Text(AppStrings.tr('सक्रिय (Active)', 'Active'))),
+                      DropdownMenuItem(value: 'Used', child: Text(AppStrings.tr('वापरलेले (Used)', 'Used'))),
+                      DropdownMenuItem(value: 'Cancelled', child: Text(AppStrings.tr('रद्द (Cancelled)', 'Cancelled'))),
+                    ],
+                    onChanged: (val) {
+                      if (val != null) setDlgState(() => selectedStatus = val);
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: Text(AppStrings.tr('रद्द करा', 'Cancel'))),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: AppColors.infoBlue, foregroundColor: Colors.white),
+              onPressed: () async {
+                if (nameCtrl.text.trim().isEmpty || mobileCtrl.text.trim().isEmpty) return;
+                final fee = double.tryParse(feeCtrl.text.trim()) ?? participant.amount;
+                final age = int.tryParse(ageCtrl.text.trim()) ?? participant.age;
+                final updated = participant.copyWith(
+                  name: nameCtrl.text.trim(),
+                  mobile: mobileCtrl.text.trim(),
+                  age: age,
+                  gender: selectedGender,
+                  amount: fee,
+                  status: selectedStatus,
+                );
+                Navigator.pop(ctx);
+                await repository.updateParticipant(updated);
+                if (mounted) setState(() {});
+              },
+              child: Text(AppStrings.tr('बदल सेव्ह करा', 'Save Changes')),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _confirmDeleteParticipant(GarbaParticipantModel participant) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(AppStrings.tr('पास नोंदणी काढून टाकायची आहे का?', 'Delete Registration?')),
+        content: Text(AppStrings.tr(
+          'आपण खात्रीपूर्वक "${participant.name}" (${participant.regNumber}) यांची नोंद काढून टाकू इच्छिता का?',
+          'Are you sure you want to delete "${participant.name}" (${participant.regNumber})?',
+        )),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(AppStrings.tr('नाही / रद्द करा', 'Cancel'))),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.expenseRed, foregroundColor: Colors.white),
+            onPressed: () async {
+              Navigator.pop(ctx);
+              await repository.deleteParticipant(participant.id);
+              if (mounted) setState(() {});
+            },
+            child: Text(AppStrings.tr('काढून टाका', 'Delete')),
+          ),
+        ],
+      ),
+    );
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -337,13 +465,17 @@ class _GarbaScreenState extends State<GarbaScreen> {
                                 ),
                                 const SizedBox(width: 8),
                                 IconButton(
-                                  icon: const Icon(Icons.delete, size: 18, color: AppColors.expenseRed),
+                                  icon: const Icon(Icons.edit_outlined, size: 18, color: AppColors.infoBlue),
                                   padding: EdgeInsets.zero,
                                   constraints: const BoxConstraints(),
-                                  onPressed: () {
-                                    repository.participants.removeWhere((item) => item.id == p.id);
-                                    setState(() {});
-                                  },
+                                  onPressed: () => _showEditParticipantDialog(p),
+                                ),
+                                const SizedBox(width: 6),
+                                IconButton(
+                                  icon: const Icon(Icons.delete_outline, size: 18, color: AppColors.expenseRed),
+                                  padding: EdgeInsets.zero,
+                                  constraints: const BoxConstraints(),
+                                  onPressed: () => _confirmDeleteParticipant(p),
                                 ),
                               ],
                             ),
@@ -390,13 +522,13 @@ class _GarbaScreenState extends State<GarbaScreen> {
                                 tooltip: 'View QR Pass',
                                 onPressed: () => _showPassModal(p),
                               ),
-                              IconButton(icon: const Icon(Icons.edit, size: 18, color: AppColors.infoBlue), onPressed: () {}),
                               IconButton(
-                                icon: const Icon(Icons.delete, size: 18, color: AppColors.expenseRed),
-                                onPressed: () {
-                                  repository.participants.removeWhere((item) => item.id == p.id);
-                                  setState(() {});
-                                },
+                                icon: const Icon(Icons.edit_outlined, size: 18, color: AppColors.infoBlue),
+                                onPressed: () => _showEditParticipantDialog(p),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.delete_outline, size: 18, color: AppColors.expenseRed),
+                                onPressed: () => _confirmDeleteParticipant(p),
                               ),
                             ],
                           ),

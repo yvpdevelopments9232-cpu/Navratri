@@ -4,6 +4,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/currency_formatter.dart';
 import '../../../models/all_models.dart';
 import '../../../repositories/mandal_repository.dart';
+import '../../../services/offline_db_helper.dart';
 
 class BankCashScreen extends StatefulWidget {
   const BankCashScreen({super.key});
@@ -119,24 +120,171 @@ class _BankCashScreenState extends State<BankCashScreen> with SingleTickerProvid
               backgroundColor: AppColors.primaryMaroon,
               foregroundColor: Colors.white,
             ),
-            onPressed: () {
+            onPressed: () async {
               final bal = double.tryParse(balCtrl.text.trim()) ?? 0.0;
               if (bankCtrl.text.trim().isEmpty || accNumCtrl.text.trim().isEmpty) return;
-              repository.bankAccounts.add(
-                BankAccountModel(
-                  id: DateTime.now().millisecondsSinceEpoch.toString(),
-                  bankName: bankCtrl.text.trim(),
-                  branchName: branchCtrl.text.trim(),
-                  accountHolder: holderCtrl.text.trim(),
-                  accountNumber: accNumCtrl.text.trim(),
-                  ifsc: ifscCtrl.text.trim(),
-                  balance: bal,
-                ),
+              final newAccount = BankAccountModel(
+                id: OfflineDbHelper.generateId(),
+                bankName: bankCtrl.text.trim(),
+                branchName: branchCtrl.text.trim(),
+                accountHolder: holderCtrl.text.trim(),
+                accountNumber: accNumCtrl.text.trim(),
+                ifsc: ifscCtrl.text.trim(),
+                balance: bal,
               );
               Navigator.pop(ctx);
+              await repository.addBankAccount(newAccount);
               setState(() {});
             },
             child: Text(AppStrings.tr('खाते जतन करा', 'Save Account')),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showEditBankDialog(BankAccountModel account) {
+    final bankCtrl = TextEditingController(text: account.bankName);
+    final branchCtrl = TextEditingController(text: account.branchName);
+    final holderCtrl = TextEditingController(text: account.accountHolder);
+    final accNumCtrl = TextEditingController(text: account.accountNumber);
+    final ifscCtrl = TextEditingController(text: account.ifsc);
+    final balCtrl = TextEditingController(text: account.balance.toStringAsFixed(0));
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            const Icon(Icons.edit, color: AppColors.infoBlue),
+            const SizedBox(width: 8),
+            Text(
+              AppStrings.tr('बँक माहिती बदला', 'Edit Bank Account'),
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 17),
+            ),
+          ],
+        ),
+        content: SizedBox(
+          width: 450,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: bankCtrl,
+                  decoration: InputDecoration(
+                    labelText: AppStrings.tr('बँकेचे नाव (उदा. SBI, HDFC)', 'Bank Name (e.g. SBI)'),
+                    prefixIcon: const Icon(Icons.account_balance),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: branchCtrl,
+                  decoration: InputDecoration(
+                    labelText: AppStrings.tr('शाखेचे नाव (Branch)', 'Branch Name'),
+                    prefixIcon: const Icon(Icons.location_city),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: holderCtrl,
+                  decoration: InputDecoration(
+                    labelText: AppStrings.tr('खातेदाराचे नाव', 'Account Holder Name'),
+                    prefixIcon: const Icon(Icons.person),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: accNumCtrl,
+                  decoration: InputDecoration(
+                    labelText: AppStrings.tr('खाते क्रमांक (Account Number)', 'Account Number'),
+                    prefixIcon: const Icon(Icons.tag),
+                  ),
+                  keyboardType: TextInputType.number,
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: ifscCtrl,
+                  decoration: InputDecoration(
+                    labelText: AppStrings.tr('IFSC कोड', 'IFSC Code'),
+                    prefixIcon: const Icon(Icons.numbers),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: balCtrl,
+                  decoration: InputDecoration(
+                    labelText: AppStrings.tr('शिल्लक (₹)', 'Current Balance (₹)'),
+                    prefixIcon: const Icon(Icons.currency_rupee),
+                  ),
+                  keyboardType: TextInputType.number,
+                ),
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(AppStrings.tr('रद्द करा', 'Cancel'), style: const TextStyle(color: AppColors.textSecondary)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.infoBlue,
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () async {
+              final bal = double.tryParse(balCtrl.text.trim()) ?? account.balance;
+              final updated = account.copyWith(
+                bankName: bankCtrl.text.trim(),
+                branchName: branchCtrl.text.trim(),
+                accountHolder: holderCtrl.text.trim(),
+                accountNumber: accNumCtrl.text.trim(),
+                ifsc: ifscCtrl.text.trim(),
+                balance: bal,
+              );
+              Navigator.pop(ctx);
+              await repository.updateBankAccount(updated);
+              setState(() {});
+            },
+            child: Text(AppStrings.tr('बदल सेव्ह करा', 'Save Changes')),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _confirmDeleteBank(BankAccountModel account) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(AppStrings.tr('बँक खाते काढून टाकायचे आहे का?', 'Delete Bank Account?')),
+        content: Text(AppStrings.tr(
+          'आपण खात्रीपूर्वक "${account.bankName} (${account.accountNumber})" खाते काढून टाकू इच्छिता का?',
+          'Are you sure you want to delete "${account.bankName} (${account.accountNumber})"?',
+        )),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(AppStrings.tr('नाही / रद्द करा', 'Cancel')),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.expenseRed, foregroundColor: Colors.white),
+            onPressed: () async {
+              Navigator.pop(ctx);
+              await repository.deleteBankAccount(account.id);
+              if (mounted) {
+                setState(() {});
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(AppStrings.tr('बँक खाते काढून टाकण्यात आले!', 'Bank account deleted!')),
+                    backgroundColor: AppColors.expenseRed,
+                  ),
+                );
+              }
+            },
+            child: Text(AppStrings.tr('काढून टाका', 'Delete')),
           ),
         ],
       ),
@@ -238,8 +386,16 @@ class _BankCashScreenState extends State<BankCashScreen> with SingleTickerProvid
                           DataCell(
                             Row(
                               children: [
-                                IconButton(icon: const Icon(Icons.edit, size: 18, color: AppColors.infoBlue), onPressed: () {}),
-                                IconButton(icon: const Icon(Icons.delete, size: 18, color: AppColors.expenseRed), onPressed: () {}),
+                                IconButton(
+                                  icon: const Icon(Icons.edit, size: 18, color: AppColors.infoBlue),
+                                  tooltip: AppStrings.tr('माहिती बदला', 'Edit'),
+                                  onPressed: () => _showEditBankDialog(b),
+                                ),
+                                IconButton(
+                                  icon: const Icon(Icons.delete, size: 18, color: AppColors.expenseRed),
+                                  tooltip: AppStrings.tr('काढून टाका', 'Delete'),
+                                  onPressed: () => _confirmDeleteBank(b),
+                                ),
                               ],
                             ),
                           ),
